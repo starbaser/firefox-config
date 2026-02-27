@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            keymaps
-// @author          firefox-config
+// @author          starbased
 // @include         main
 // @startup         UC.keymaps.exec(win);
 // @shutdown        UC.keymaps.destroy();
