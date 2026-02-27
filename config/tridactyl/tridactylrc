@@ -1,0 +1,73 @@
+" General Settings
+colorscheme srcery
+set smoothscroll true
+" set allowautofocus false
+set newtab about:blank
+set newtabfocus false
+set escapehatchsidebarhack true
+
+" Aliases
+alias b tab
+alias o open
+alias w winopen
+alias t tabopen
+alias enew tabopen
+alias bmv tabmove
+alias bd tabclose
+alias bqa tabonly
+alias bn tabnext_gt
+alias bp tabprev
+alias b0 tab 1
+alias b$ tab 0
+alias ball taball
+
+" bind <c-P> tabmove -1
+" bind <c-N> tabmove +1
+" bind <c-!> tabmove 1
+" bind <c-@> tabmove 0
+" bind <m-0> tab 1
+" bind <m-0> tab -1
+
+unbind <c-e>
+unbind <c-y>
+
+" Binds
+unbind <c-f>
+" unbind gf
+
+" bind ? fillcmdline find
+" bind n findnext 1
+" bind N findnext -1
+
+" swap : with \
+" unbind :
+bind \ fillcmdline_notrail
+bind <Escape> composite mode normal ; hidecmdline
+
+" swap u/d -> <C-u/d>
+bind d scrollpage 0.5
+bind u scrollpage -0.5
+bind <C-d> tabclose
+bind <C-u> undo
+
+bind D tabdetach
+bind <c-D> tabduplicate
+
+" unbind <a-m>
+" unbind <a-p>
+
+ " F1 is used by sidebar
+unbind <F1>
+
+bindurl github.com yr composite js document.location.href.replace(/https?:\/\//,"git@").replace("/",":").replace(/$/,".git") | clipboard yank
+bindurl github.com yg composite js document.location.pathname.split('/').slice(1,3).join('/') + ".git" | js -p "git clone git@github.com:" + JS_ARG | clipboard yank
+bindurl github.com yp composite js "{ '" + document.location.pathname.split('/').slice(1,3).join('/') + "' }" | clipboard yank
+unbindurl reddit.com q
+unbindurl reddit.com w
+unbindurl reddit.com [
+unbindurl reddit.com ]
+unbindurl reddit.com x
+unbindurl reddit.com a
+unbindurl reddit.com s
+
+" vim: set filetype=tridactyl

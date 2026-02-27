@@ -1,0 +1,156 @@
+/* Custom CSS overrides and additions to textfox theme */
+
+:root {
+  --lwt-text-color: #fce8c3 !important;
+  --sidebar-min-width: 48px;
+  --sidebar-width: 192px;
+  --button-size: 30px !important;
+  --tf-rounding: 2px !important;
+
+  --sidebar-opened-icon: url("chrome://browser/skin/sidebar-expanded.svg");
+  --sidebar-closed-icon: url("chrome://browser/skin/sidebar-collapsed.svg");
+
+  --toolbar-field-background-color: #262626 !important;
+}
+
+/* fix right-click menu color */
+menupopup,
+panel {
+  --panel-color: #fce8c3 !important;
+}
+
+/* fix inactive/active window color */
+#browser:not(.browser-toolbox-background) {
+  :root[lwtheme] & {
+    background-image: none !important;
+  }
+}
+
+#sidebar-box {
+  &::before {
+    z-index: 2 !important;
+  }
+}
+
+/* Normal */
+#sidebar-box:not([titlepreface*="᠎"]) {
+  min-width: var(--sidebar-min-width) !important;
+  width: var(--sidebar-width) !important;
+}
+
+/* UserChrome Toggle #2 - Sidebar position */
+:root([titlepreface*="​"]) #sidebar-box {
+  order: 5 !important;
+  margin-left: 0 !important;
+}
+:root:not([titlepreface*="​"]) #sidebar-box {
+  order: 1 !important;
+  margin-right: 0 !important;
+}
+
+/* Minimizes  */
+:root[titlepreface*="᠎"] {
+  #sidebar-box {
+    width: var(--sidebar-min-width) !important;
+  }
+}
+
+/* :root:not([titlepreface*="​"]) { */
+/*   #userchrome-toggle-extended_n2ezr_ru-BAP { */
+/*     --webextension-menupanel-image: var(--sidebar-opened-icon) !important; */
+/*     --webextension-menupanel-image-light: var(--sidebar-opened-icon) !important; */
+/*     --webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important; */
+/*     --webextension-toolbar-image: var(--sidebar-opened-icon) !important; */
+/*     --webextension-toolbar-image-light: var(--sidebar-opened-icon) !important; */
+/*     --webextension-toolbar-image-dark: var(--sidebar-opened-icon) !important; */
+/*   } */
+/* } */
+/**/
+/* :root([titlepreface*="​"]) { */
+/*   #sidebar-box { */
+/*     display: none !important; */
+/*   } */
+/**/
+/*   #userchrome-toggle-extended_n2ezr_ru-BAP { */
+/*     --webextension-menupanel-image: var(--sidebar-closed-icon) !important; */
+/*     --webextension-menupanel-image-light: var(--sidebar-closed-icon) !important; */
+/*     --webextension-menupanel-image-dark: var(--sidebar-closed-icon) !important; */
+/*     --webextension-toolbar-image: var(--sidebar-closed-icon) !important; */
+/*     --webextension-toolbar-image-light: var(--sidebar-closed-icon) !important; */
+/*     --webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important; */
+/*   } */
+/**/
+/**/
+/**/
+
+#PersonalToolbar {
+  padding: 0px !important;
+}
+
+#urlbar-searchmode-switcher {
+  display: none !important;
+}
+
+#identity-box {
+  display: none !important;
+}
+
+#PlacesToolbarItems {
+  justify-content: unset !important;
+}
+
+.Tab .audio {
+  top: -6px !important;
+  left: 12px !important;
+}
+
+.Tab[data-pin="true"] :is(.fav, .fav-icon) {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.PinnedTabsBar .tab-wrapper .Tab {
+  --n: 3;
+  --m: 1;
+
+  width: var(--button-size) !important;
+  height: var(--button-size) !important;
+}
+
+#nav-bar {
+  background-color: #1c1b19 !important;
+}
+
+#nav-bar {
+  &:where(:-moz-window-inactive) {
+    background-color: var(--toolbox-bgcolor-inactive) !important;
+  }
+}
+
+#PlacesToolbar {
+  background-color: #1c1b19 !important;
+}
+
+#PlacesToolbar {
+  &:where(:-moz-window-inactive) {
+    background-color: var(--toolbox-bgcolor-inactive) !important;
+  }
+}
+
+#browser:not(.browser-toolbox-background) {
+  &:where(:-moz-window-inactive) {
+    background-color: var(--toolbox-bgcolor-inactive) !important;
+  }
+}
+
+#urlbar-searchmode-switcher {
+  display: none !important;
+}
+
+#trust-icon-container {
+  display: none !important;
+}
+
+#identity-box {
+  display: none !important;
+}

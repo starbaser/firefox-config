@@ -1,0 +1,189 @@
+#root.root {
+  --frame-bg: #1c1b19;
+}
+
+#root.root {
+  &:where(:-moz-window-inactive) {
+    --frame-bg: var(--toolbox-bgcolor-inactive) !important;
+  }
+}
+
+#root.root {
+  --frame-el-bg: rgb(58, 58, 58);
+}
+
+#root.root {
+  --frame-fg: #baa67f;
+}
+
+#root.root {
+  --frame-el-overlay-hover-bg: rgb(252, 232, 195, 0.086);
+}
+
+#root.root {
+  --frame-el-overlay-clicked-bg: rgb(252, 232, 195, 0.141);
+}
+
+#root.root {
+  --frame-el-overlay-selected-bg: rgb(252, 232, 195, 0.141);
+}
+
+#root.root {
+  --frame-scrollbar-color: rgb(252, 232, 195, 0.275);
+}
+
+#root.root {
+  --toolbar-fg: #baa67f;
+}
+
+#root.root {
+  --toolbar-el-overlay-hover-bg: rgb(252, 232, 195, 0.086);
+}
+
+#root.root {
+  --toolbar-el-overlay-clicked-bg: rgb(252, 232, 195, 0.141);
+}
+
+#root.root {
+  --toolbar-el-overlay-active-bg: rgb(252, 232, 195, 0.141);
+}
+
+#root.root {
+  --toolbar-el-overlay-active-border: rgb(252, 232, 195, 0);
+}
+
+#root.root {
+  --toolbar-el-overlay-selected-bg: rgb(252, 232, 195, 0.141);
+}
+
+#root.root {
+  --toolbar-el-overlay-selected-border: rgb(251, 184, 41);
+}
+
+#root.root {
+  --toolbar-scrollbar-color: rgb(252, 232, 195, 0.275);
+}
+
+#root.root {
+  --nav-btn-width: 30px;
+}
+
+#root.root {
+  --ctx-menu-font: 0.875rem Iosevka Custom;
+}
+
+#root.root {
+  --tabs-margin: 0px;
+}
+
+#root.root {
+  --bottom-bar-height: 30px;
+}
+
+#root.root {
+  --button-size: 30px;
+}
+
+#root.root {
+  --active-el-bg: #3a3a3a;
+}
+
+#root.root {
+  --active-el-fg: rgb(208, 191, 161);
+}
+
+#root.root {
+  --active-el-overlay-hover-bg: rgb(186, 166, 127, 0.086);
+}
+
+#root.root {
+  --active-el-overlay-clicked-bg: rgb(186, 166, 127, 0.141);
+}
+
+#root.root {
+  --windows-popup-window-border: rgb(186, 166, 127);
+}
+
+#root.root {
+  --tabs-normal-fg: #baa67f;
+}
+
+#root.root {
+  --tabs-activated-fg: #baa67f;
+}
+
+#root.root {
+  --nav-btn-fg: #baa67f;
+}
+
+#root.root {
+  --tabs-progress-bg: rgb(252, 232, 195, 0.086);
+}
+
+#root.root {
+  --tabs-activated-bg: #444444;
+}
+
+#root.root {
+  --tabs-normal-bg: #262626;
+}
+
+#root.root {
+  --bookmarks-node-activated-fg: #baa67f;
+}
+
+#root.root {
+  --popup-scrollbar-color: rgb(186, 166, 127, 0.275);
+}
+
+#root.root {
+  --popup-bg: #1c1b19;
+}
+
+#root.root {
+  --popup-fg: #baa67f;
+}
+
+#root.root {
+  --ctx-menu-separator: #baa67f;
+}
+
+#root.root {
+  --ctx-menu-fg: #fce8c3;
+}
+
+#root.root {
+  --ctx-menu-bg: #1c1b19;
+}
+
+#root.root {
+  --notification-fg: #baa67f;
+}
+
+#root.root {
+  --scroll-color: rgb(186, 166, 127, 0.212);
+}
+
+#root.root {
+  --scroll-progress-bg: #68a8e4;
+}
+
+#root.root {
+  --status-ok: #519f50;
+}
+
+#root.root {
+  --status-active: #68a8e4;
+}
+
+#root.root {
+  --status-notice: #2be4d0;
+}
+
+#root.root {
+  --status-err: #f75341;
+}
+
+#root.root {
+  --tf-rounding: 4px;
+}
