@@ -187,3 +187,8 @@
 #root.root {
   --tf-rounding: 4px;
 }
+
+/* Lowercase tab titles (Astrolabe textfox patch) */
+.Tab .body {
+  text-transform: lowercase;
+}

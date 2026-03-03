@@ -13,6 +13,20 @@
   --toolbar-field-background-color: #262626 !important;
 }
 
+/* Lowercase text transform (Astrolabe textfox patch) */
+::placeholder {
+  text-transform: lowercase;
+}
+
+.findbar-container > checkbox {
+  text-transform: lowercase;
+}
+
+/* Vertical tabs: remove upstream min-width constraint */
+box#vertical-tabs {
+  min-width: unset !important;
+}
+
 /* fix right-click menu color */
 menupopup,
 panel {
