@@ -46,6 +46,22 @@ let
        "$firefoxLib/defaults/pref/config-prefs.js"
   '';
 
+  # ── Srcery dark browser theme (not in nix-firefox-addons) ───────────────
+  srceryDark = pkgs.stdenv.mkDerivation {
+    pname = "srcery-dark";
+    version = "1.0";
+    src = pkgs.fetchurl {
+      url = "https://addons.mozilla.org/firefox/downloads/file/3731469/srcery_dark-1.0.xpi";
+      sha256 = "0lbz571xrz229kgsj0jgg1hc4fhaq5g653a0lgzpczv1sh7kf1jx";
+    };
+    dontUnpack = true;
+    installPhase = ''
+      dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+      mkdir -p "$dst"
+      install -v -m644 "$src" "$dst/{6db4bb2a-7699-46c4-89d2-56143e486116}.xpi"
+    '';
+  };
+
   # ── Legacy XPI derivations ──────────────────────────────────────────────
   legacyBootstrapLoader = pkgs.stdenv.mkDerivation {
     pname = "bootstrapLoader-xpi";
@@ -165,6 +181,56 @@ let
   ];
 
   profilePath = "default-nightly";
+
+  # ── Extension packages (deployed as individual XPI files via hjem) ──────
+  allExtensionPackages =
+    (with pkgs.firefoxAddons; [
+      ublock-origin
+      sidebery
+      clearurls
+      darkreader
+      istilldontcareaboutcookies
+      tampermonkey
+      refined-github-
+      sponsorblock
+      stylus
+      reddit-enhancement-suite
+      tridactyl-vim
+      cookie-editor
+      translate-web-pages
+      youtube-nonstop
+      open-multiple-urls
+      view-image
+      cliget
+      userchrome-toggle-extended
+      claude-exporter
+      markdown-here
+      export-tabs-urls-and-titles
+      widegithub
+    ])
+    ++ [
+      pkgs.firefoxAddons."1password-x-password-manager"
+      srceryDark
+      legacyBootstrapLoader
+      legacyKeyconfig
+    ];
+
+  # Flat derivation: all XPIs in one directory, dereferenced from store paths
+  extensionsFlat = pkgs.runCommand "firefox-extensions-flat" { } ''
+    mkdir -p $out
+    ${lib.concatMapStringsSep "\n" (pkg: ''
+      for xpi in ${pkg}/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/*.xpi; do
+        [ -f "$xpi" ] && cp -L "$xpi" "$out/$(basename "$xpi")"
+      done
+    '') allExtensionPackages}
+  '';
+
+  # IFD: enumerate XPI filenames at eval time → individual hjem file entries
+  extensionFileEntries = lib.mapAttrs' (name: _: {
+    name = ".mozilla/firefox/${profilePath}/extensions/${name}";
+    value = { source = "${extensionsFlat}/${name}"; };
+  }) (builtins.readDir extensionsFlat);
+
   chromePath = ".mozilla/firefox/${profilePath}/chrome";
 in
 {
@@ -197,37 +263,6 @@ in
 
       userChrome = userChromeCss;
       userContent = userContentCss;
-
-      extensions.packages =
-        (with pkgs.firefoxAddons; [
-          ublock-origin
-          sidebery
-          clearurls
-          darkreader
-          istilldontcareaboutcookies
-          tampermonkey
-          refined-github-
-          sponsorblock
-          stylus
-          reddit-enhancement-suite
-          tridactyl-vim
-          cookie-editor
-          translate-web-pages
-          youtube-nonstop
-          open-multiple-urls
-          view-image
-          cliget
-          userchrome-toggle-extended
-          claude-exporter
-          markdown-here
-          export-tabs-urls-and-titles
-          widegithub
-        ])
-        ++ [
-          pkgs.firefoxAddons."1password-x-password-manager"
-          legacyBootstrapLoader
-          legacyKeyconfig
-        ];
 
       settings = {
         # ── FASTFOX ──────────────────────────────────────────────────────
@@ -404,6 +439,9 @@ in
 
   # ── Raw hjem files: textfox CSS, userChromeJS, fx-autoconfig utils ──────
   files = lib.mkMerge [
+
+    # Individual extension XPI files (IFD-enumerated, avoids symlinked directory bug)
+    extensionFileEntries
 
     # Textfox passthrough CSS files — symlinked from package
     (lib.listToAttrs (
