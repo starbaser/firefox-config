@@ -8,7 +8,7 @@
 # From consumer's hjem.specialArgs:
 #   srcery, theme             — color palette and UI symbols
 #
-# Requires consumer to have NUR overlay (pkgs.nur.repos.rycee.firefox-addons)
+# Requires consumer to have nix-firefox-addons overlay (pkgs.firefoxAddons)
 {
   wrapHmModule,
   hmSrc,
@@ -69,21 +69,6 @@ let
       mkdir -p "$dst"
       install -v -m644 "$src" "$dst/keyconfig@Off.JustOff.xpi"
     '';
-  };
-
-  # ── Cookie Editor (not in NUR) ──────────────────────────────────────────
-  cookieEditor = pkgs.nur.repos.rycee.firefox-addons.buildFirefoxXpiAddon {
-    pname = "cookie-editor";
-    version = "1.11.0";
-    addonId = "{d1daf60d-5247-4bd7-8a2c-6a1da3fc0eef}";
-    url = "https://addons.mozilla.org/firefox/downloads/file/4362364/cookie_editor-1.11.0.xpi";
-    sha256 = "sha256-/sDJCSxwv8wr39qa573jPgoh1Ff2rZl6AeUnIQ75E+0=";
-    meta = {
-      homepage = "https://cookie-editor.com/";
-      description = "Cookie-Editor lets you efficiently create, edit and delete cookies for the current tab";
-      license = pkgs.lib.licenses.mit;
-      platforms = pkgs.lib.platforms.all;
-    };
   };
 
   # ── Textfox CSS generation ─────────────────────────────────────────────
@@ -214,22 +199,32 @@ in
       userContent = userContentCss;
 
       extensions.packages =
-        (with pkgs.nur.repos.rycee.firefox-addons; [
+        (with pkgs.firefoxAddons; [
           ublock-origin
           sidebery
           clearurls
           darkreader
-          i-dont-care-about-cookies
+          istilldontcareaboutcookies
           tampermonkey
-          refined-github
+          refined-github-
           sponsorblock
           stylus
           reddit-enhancement-suite
-          onepassword-password-manager
-          tridactyl
+          tridactyl-vim
+          cookie-editor
+          translate-web-pages
+          youtube-nonstop
+          open-multiple-urls
+          view-image
+          cliget
+          userchrome-toggle-extended
+          claude-exporter
+          markdown-here
+          export-tabs-urls-and-titles
+          widegithub
         ])
         ++ [
-          cookieEditor
+          pkgs.firefoxAddons."1password-x-password-manager"
           legacyBootstrapLoader
           legacyKeyconfig
         ];

@@ -28,6 +28,11 @@
       url = "github:nix-community/NUR";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    nix-firefox-addons = {
+      url = "github:OsiPog/nix-firefox-addons";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -39,6 +44,7 @@
       textfox,
       firefox,
       nur,
+      nix-firefox-addons,
       ...
     }:
     let
@@ -71,5 +77,6 @@
 
       # Re-export overlays the consumer needs
       overlays.nur = nur.overlays.default;
+      overlays.nix-firefox-addons = nix-firefox-addons.overlays.default;
     };
 }
