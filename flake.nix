@@ -33,6 +33,16 @@
       url = "github:OsiPog/nix-firefox-addons";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    fx-autoconfig = {
+      url = "github:MrOtherGuy/fx-autoconfig";
+      flake = false;
+    };
+
+    firefox-scripts = {
+      url = "github:xiaoxiaoflood/firefox-scripts";
+      flake = false;
+    };
   };
 
   outputs =
@@ -45,6 +55,8 @@
       firefox,
       nur,
       nix-firefox-addons,
+      fx-autoconfig,
+      firefox-scripts,
       ...
     }:
     let
@@ -73,6 +85,8 @@
           firefoxNightlyPkg
           textfoxPkg
           ;
+        fxAutoconfigSrc = fx-autoconfig;
+        firefoxScriptsSrc = firefox-scripts;
       };
 
       # Re-export overlays the consumer needs

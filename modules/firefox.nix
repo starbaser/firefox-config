@@ -4,6 +4,8 @@
 #   wrapHmModule, hmSrc       — hjem-compat HM module wrapper
 #   firefoxNightlyPkg         — firefox nightly binary
 #   textfoxPkg                — textfox CSS package
+#   fxAutoconfigSrc           — github:MrOtherGuy/fx-autoconfig (flake = false)
+#   firefoxScriptsSrc         — github:xiaoxiaoflood/firefox-scripts (flake = false)
 #
 # From consumer's hjem.specialArgs:
 #   srcery, theme             — color palette and UI symbols
@@ -14,6 +16,8 @@
   hmSrc,
   firefoxNightlyPkg,
   textfoxPkg,
+  fxAutoconfigSrc,
+  firefoxScriptsSrc,
 }:
 { pkgs, lib, srcery, theme, ... }:
 
@@ -38,11 +42,11 @@ let
     fi
 
     chmod u+w "$firefoxLib"
-    cp ${../config/firefox/fx-autoconfig/program/config.js} "$firefoxLib/config.js"
+    cp ${fxAutoconfigSrc}/program/config.js "$firefoxLib/config.js"
 
     mkdir -p "$firefoxLib/defaults/pref"
     chmod u+w "$firefoxLib/defaults" "$firefoxLib/defaults/pref" 2>/dev/null || true
-    cp ${../config/firefox/fx-autoconfig/program/defaults/pref/config-prefs.js} \
+    cp ${fxAutoconfigSrc}/program/defaults/pref/config-prefs.js \
        "$firefoxLib/defaults/pref/config-prefs.js"
   '';
 
@@ -66,7 +70,7 @@ let
   legacyBootstrapLoader = pkgs.stdenv.mkDerivation {
     pname = "bootstrapLoader-xpi";
     version = "1.0";
-    src = ../config/firefox/extensions/bootstrapLoader.xpi;
+    src = "${firefoxScriptsSrc}/extensions/bootstrapLoader/bootstrapLoader.xpi";
     dontUnpack = true;
     installPhase = ''
       dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
@@ -78,7 +82,7 @@ let
   legacyKeyconfig = pkgs.stdenv.mkDerivation {
     pname = "keyconfig-xpi";
     version = "1.0";
-    src = ../config/firefox/extensions/keyconfig.xpi;
+    src = "${firefoxScriptsSrc}/extensions/keyconfig/keyconfig.xpi";
     dontUnpack = true;
     installPhase = ''
       dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
@@ -88,9 +92,7 @@ let
   };
 
   # ── Textfox CSS generation ─────────────────────────────────────────────
-  # Srcery-themed textfox config
-  textfoxConfigCss = ''
-    :root {
+  textfoxBaseVars = ''
       --tf-font-family: "Iosevka Custom", Consolas, monospace;
       --tf-font-size: 14px;
       --tf-accent: #${srcery.primary.bright_white.hex};
@@ -99,6 +101,11 @@ let
       --tf-border-transition: 0.2s ease;
       --tf-border-width: 2px;
       --tf-border-radius: 4px;
+  '';
+
+  textfoxContentVars = ''
+    :root {
+    ${textfoxBaseVars}
       --tf-tabs-vertical-margin: 0.8rem;
     }
   '';
@@ -123,7 +130,7 @@ let
 
     /* Sidebery styles inlined to avoid @import symlink issues */
     ${textfoxDefaults}
-    ${textfoxConfigCss}
+    ${textfoxContentVars}
     ${textfoxOverwrites}
     ${textfoxBaseClean}
     ${customSidebery}
@@ -145,16 +152,9 @@ let
     ${customChromeCss}
   '';
 
-  textfoxGeneratedConfigCss = ''
+  textfoxConfigCss = ''
     :root {
-      --tf-font-family: "Iosevka Custom", Consolas, monospace;
-      --tf-font-size: 14px;
-      --tf-accent: #${srcery.primary.bright_white.hex};
-      --tf-background: #${srcery.base00};
-      --tf-border-color: #${srcery.primary.white.hex};
-      --tf-border-transition: 0.2s ease;
-      --tf-border-width: 2px;
-      --tf-border-radius: 4px;
+    ${textfoxBaseVars}
       --tf-tabs-horizontal-enabled: false;
       --tf-tabs-vertical-enabled: true;
       --tf-tabs-vertical-margin: 0.8rem;
@@ -466,40 +466,40 @@ in
     }
 
     # config.css — generated from textfox options
-    { "${chromePath}/config.css".text = textfoxGeneratedConfigCss; }
+    { "${chromePath}/config.css".text = textfoxConfigCss; }
 
     # userChromeJS scripts
     {
       "${chromePath}/extensionOptionsMenu.uc.js".source =
-        ../config/firefox/default-nightly/chrome/extensionOptionsMenu.uc.js;
+        "${firefoxScriptsSrc}/chrome/extensionOptionsMenu.uc.js";
       "${chromePath}/keymaps.uc.js".source =
         ../config/firefox/default-nightly/chrome/keymaps.uc.js;
       "${chromePath}/keyset.html".source =
         ../config/firefox/default-nightly/chrome/keyset.html;
       "${chromePath}/rebuild_userChrome.uc.js".source =
-        ../config/firefox/default-nightly/chrome/rebuild_userChrome.uc.js;
+        "${firefoxScriptsSrc}/chrome/rebuild_userChrome.uc.js";
       "${chromePath}/styloaix.uc.js".source =
-        ../config/firefox/default-nightly/chrome/styloaix.uc.js;
+        "${firefoxScriptsSrc}/chrome/styloaix.uc.js";
     }
 
     # Legacy bootstrap utils (for bootstrapLoader.xpi)
     {
       "${chromePath}/utils/BootstrapLoader.js".source =
-        ../config/firefox/default-nightly/chrome/utils/BootstrapLoader.js;
+        "${firefoxScriptsSrc}/chrome/utils/BootstrapLoader.js";
       "${chromePath}/utils/RDFDataSource.sys.mjs".source =
-        ../config/firefox/default-nightly/chrome/utils/RDFDataSource.sys.mjs;
+        "${firefoxScriptsSrc}/chrome/utils/RDFDataSource.sys.mjs";
       "${chromePath}/utils/RDFManifestConverter.sys.mjs".source =
-        ../config/firefox/default-nightly/chrome/utils/RDFManifestConverter.sys.mjs;
+        "${firefoxScriptsSrc}/chrome/utils/RDFManifestConverter.sys.mjs";
       "${chromePath}/utils/userChrome.jsm".source =
-        ../config/firefox/default-nightly/chrome/utils/userChrome.jsm;
+        "${firefoxScriptsSrc}/chrome/utils/userChrome.jsm";
       "${chromePath}/utils/xPref.jsm".source =
-        ../config/firefox/default-nightly/chrome/utils/xPref.jsm;
+        "${firefoxScriptsSrc}/chrome/utils/xPref.jsm";
     }
 
     # StyloaiX editor UI
     {
       "${chromePath}/utils/styloaix" = {
-        source = ../config/firefox/default-nightly/chrome/utils/styloaix;
+        source = "${firefoxScriptsSrc}/chrome/utils/styloaix";
         type = "symlink";
       };
     }
@@ -507,17 +507,17 @@ in
     # fx-autoconfig profile utils — loaded at startup via chrome.manifest
     {
       "${chromePath}/utils/boot.sys.mjs".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/boot.sys.mjs;
+        "${fxAutoconfigSrc}/profile/chrome/utils/boot.sys.mjs";
       "${chromePath}/utils/utils.sys.mjs".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/utils.sys.mjs;
+        "${fxAutoconfigSrc}/profile/chrome/utils/utils.sys.mjs";
       "${chromePath}/utils/fs.sys.mjs".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/fs.sys.mjs;
+        "${fxAutoconfigSrc}/profile/chrome/utils/fs.sys.mjs";
       "${chromePath}/utils/uc_api.sys.mjs".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/uc_api.sys.mjs;
+        "${fxAutoconfigSrc}/profile/chrome/utils/uc_api.sys.mjs";
       "${chromePath}/utils/module_loader.mjs".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/module_loader.mjs;
+        "${fxAutoconfigSrc}/profile/chrome/utils/module_loader.mjs";
       "${chromePath}/utils/chrome.manifest".source =
-        ../config/firefox/fx-autoconfig/profile/chrome/utils/chrome.manifest;
+        "${fxAutoconfigSrc}/profile/chrome/utils/chrome.manifest";
     }
   ];
 

@@ -1,7 +1,7 @@
 const ctx = {};
 tri.ctx = ctx;
 
-tri.ctx.init = ({ background = false } = opts) => {
+tri.ctx.init = ({ background = false } = {}) => {
   console.log("init", background);
 };
 

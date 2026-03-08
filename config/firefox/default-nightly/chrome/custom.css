@@ -157,14 +157,6 @@ panel {
   }
 }
 
-#urlbar-searchmode-switcher {
-  display: none !important;
-}
-
 #trust-icon-container {
-  display: none !important;
-}
-
-#identity-box {
   display: none !important;
 }
