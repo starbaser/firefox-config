@@ -194,6 +194,6 @@
 }
 
 /* Hide favicon on hover */
-.Tab:hover .fav svg {
+.Tab:hover .fav > :is(svg, .fav-icon) {
   display: none !important;
 }
