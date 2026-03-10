@@ -110,12 +110,6 @@ let
     }
   '';
 
-  # Inline textfox sidebery CSS — avoids @import symlink failures (textfox#96)
-  textfoxBase = builtins.readFile "${textfoxPkg}/chrome/content/sidebery.css";
-  textfoxBaseClean = builtins.replaceStrings
-    [ ''@import url("../overwrites.css");'' ]
-    [ "/* overwrites.css inlined */" ]
-    textfoxBase;
   textfoxOverwrites = builtins.readFile "${textfoxPkg}/chrome/overwrites.css";
   textfoxDefaults = builtins.readFile "${textfoxPkg}/chrome/defaults.css";
   customSidebery = builtins.readFile ../config/firefox/sidebery.css;
@@ -128,11 +122,9 @@ let
      /* / /_/  __/>  </ /_/ __/ /_/ />  <    */
      /* \__/\___/_/|_|\__/_/  \____/_/|_|    */
 
-    /* Sidebery styles inlined to avoid @import symlink issues */
     ${textfoxDefaults}
     ${textfoxContentVars}
     ${textfoxOverwrites}
-    ${textfoxBaseClean}
     ${customSidebery}
 
     /* Other content styles */
