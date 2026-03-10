@@ -165,6 +165,10 @@ panel {
   display: none !important;
 }
 
+#sidebar-panel-header {
+  display: none !important;
+}
+
 :root:not([titlepreface*="᠎"]) #userchrome-toggle-extended_n2ezr_ru-BAP {
 	--webextension-menupanel-image: var(--sidebar-opened-icon) !important;
 	--webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important;
