@@ -166,15 +166,15 @@ panel {
 }
 
 :root:not([titlepreface*="᠎"]) #userchrome-toggle-extended_n2ezr_ru-BAP {
-	--webextension-menupanel-image: var(--sidebar-opened-icon);
-	--webextension-menupanel-image-dark: var(--sidebar-opened-icon);
-	--webextension-toolbar-image: var(--sidebar-opened-icon);
-	--webextension-toolbar-image-dark: var(--sidebar-opened-icon);
+	--webextension-menupanel-image: var(--sidebar-opened-icon) !important;
+	--webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important;
+	--webextension-toolbar-image: var(--sidebar-opened-icon) !important;
+	--webextension-toolbar-image-dark: var(--sidebar-opened-icon) !important;
 }
 
 :root[titlepreface*="᠎"] #userchrome-toggle-extended_n2ezr_ru-BAP {
-	--webextension-menupanel-image: var(--sidebar-closed-icon);
-	--webextension-menupanel-image-dark: var(--sidebar-closed-icon);
-	--webextension-toolbar-image: var(--sidebar-closed-icon);
-	--webextension-toolbar-image-dark: var(--sidebar-closed-icon);
+	--webextension-menupanel-image: var(--sidebar-closed-icon) !important;
+	--webextension-menupanel-image-dark: var(--sidebar-closed-icon) !important;
+	--webextension-toolbar-image: var(--sidebar-closed-icon) !important;
+	--webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important;
 }
