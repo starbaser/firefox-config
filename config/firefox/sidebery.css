@@ -192,3 +192,8 @@
 .Tab .body {
   text-transform: lowercase;
 }
+
+/* Hide favicon on hover */
+.Tab:hover .fav svg {
+  display: none !important;
+}
