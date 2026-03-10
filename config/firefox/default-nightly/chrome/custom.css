@@ -53,7 +53,7 @@ panel {
 }
 
 /* UserChrome Toggle #2 - Sidebar position */
-:root([titlepreface*="​"]) #sidebar-box {
+:root[titlepreface*="​"] #sidebar-box {
   order: 5 !important;
   margin-left: 0 !important;
 }
