@@ -248,7 +248,17 @@ in
   programs.firefox = {
     enable = true;
     package = null;
-    nativeMessagingHosts = [ pkgs.tridactyl-native ];
+    nativeMessagingHosts = [
+      pkgs.tridactyl-native
+      (pkgs.writeTextDir "lib/mozilla/native-messaging-hosts/com.1password.1password.json"
+        (builtins.toJSON {
+          name = "com.1password.1password";
+          description = "1Password";
+          path = "/run/wrappers/bin/1Password-BrowserSupport";
+          type = "stdio";
+          allowed_extensions = [ "{d634138d-c276-4fc8-924b-40a0ea21d284}" ];
+        }))
+    ];
 
     policies = {
       DisableTelemetry = true;
