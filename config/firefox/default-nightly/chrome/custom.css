@@ -97,6 +97,12 @@ panel {
 /**/
 /**/
 
+/* URL bar autocomplete result hover/selected highlight */
+.urlbarView-row:hover,
+.urlbarView-row[selected] {
+  background-color: #2e2b26 !important;
+}
+
 #PersonalToolbar {
   padding: 0px !important;
 }
