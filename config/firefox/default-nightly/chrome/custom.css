@@ -13,7 +13,7 @@
   --toolbar-field-background-color: #262626 !important;
 }
 
-/* Lowercase text transform (Astrolabe textfox patch) */
+/* Lowercase text transform */
 ::placeholder {
   text-transform: lowercase;
 }
@@ -67,35 +67,7 @@ panel {
   #sidebar-box {
     width: var(--sidebar-min-width) !important;
   }
-}#sidebar-main
-
-/* :root:not([titlepreface*="​"]) { */
-/*   #userchrome-toggle-extended_n2ezr_ru-BAP { */
-/*     --webextension-menupanel-image: var(--sidebar-opened-icon) !important; */
-/*     --webextension-menupanel-image-light: var(--sidebar-opened-icon) !important; */
-/*     --webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important; */
-/*     --webextension-toolbar-image: var(--sidebar-opened-icon) !important; */
-/*     --webextension-toolbar-image-light: var(--sidebar-opened-icon) !important; */
-/*     --webextension-toolbar-image-dark: var(--sidebar-opened-icon) !important; */
-/*   } */
-/* } */
-/**/
-/* :root([titlepreface*="​"]) { */
-/*   #sidebar-box { */
-/*     display: none !important; */
-/*   } */
-/**/
-/*   #userchrome-toggle-extended_n2ezr_ru-BAP { */
-/*     --webextension-menupanel-image: var(--sidebar-closed-icon) !important; */
-/*     --webextension-menupanel-image-light: var(--sidebar-closed-icon) !important; */
-/*     --webextension-menupanel-image-dark: var(--sidebar-closed-icon) !important; */
-/*     --webextension-toolbar-image: var(--sidebar-closed-icon) !important; */
-/*     --webextension-toolbar-image-light: var(--sidebar-closed-icon) !important; */
-/*     --webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important; */
-/*   } */
-/**/
-/**/
-/**/
+}
 
 /* URL bar autocomplete result hover/selected highlight */
 .urlbarView-row:hover,

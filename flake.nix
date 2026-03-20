@@ -1,11 +1,11 @@
 {
-  description = "firefox-config — Firefox Nightly + Textfox + fx-autoconfig hjem module";
+  description = "firefox-config — Firefox Nightly + Textfox + fx-autoconfig eigenhome module";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    hjem-compat = {
-      url = "git+file:///home/eigenmage/dev/projects/hjem-compat";
+    eigenhome = {
+      url = "github:starbaser/eigenhome";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -49,7 +49,7 @@
     {
       self,
       nixpkgs,
-      hjem-compat,
+      eigenhome,
       home-manager,
       textfox,
       firefox,
@@ -68,15 +68,15 @@
           hm = import "${home-manager}/modules/lib" { lib = self; };
         }
       );
-      wrapHmModule = import "${hjem-compat}/modules/wrap-hm-module.nix" { inherit hmExtLib; };
+      wrapHmModule = import "${eigenhome}/modules/hm-compat/wrap-hm-module.nix" { inherit hmExtLib; };
       hmSrc = "${home-manager}";
 
       firefoxNightlyPkg = firefox.packages.${system}.firefox-nightly-bin;
       textfoxPkg = textfox.packages.${system}.default;
     in
     {
-      # hjem module — add to hjem.extraModules
-      # Consumer must provide srcery and theme via hjem.specialArgs
+      # eigenhome module — add to eigenhome.extraModules
+      # Consumer must provide srcery and theme via eigenhome.specialArgs
       # Consumer must have nur.overlays.default in nixpkgs overlays
       hjemModules.firefox = import ./modules/firefox.nix {
         inherit

@@ -188,7 +188,7 @@
   --tf-rounding: 4px;
 }
 
-/* Lowercase tab titles (Astrolabe textfox patch) */
+/* Lowercase tab titles */
 .Tab .body {
   text-transform: lowercase;
 }
