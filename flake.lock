@@ -1,5 +1,28 @@
 {
   "nodes": {
+    "eigenhome": {
+      "inputs": {
+        "home-manager": "home-manager",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "rum": "rum",
+        "smfh": "smfh_2"
+      },
+      "locked": {
+        "lastModified": 1773980468,
+        "narHash": "sha256-X35OhohzTatAqMdcawSzB87VMvqOvGXc13cXQrsGpwE=",
+        "ref": "refs/heads/main",
+        "rev": "927364320ff7f81b2ad4be79f1613da18c702954",
+        "revCount": 42,
+        "type": "git",
+        "url": "ssh://git@github.com/starbaser/eigenhome"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/starbaser/eigenhome"
+      }
+    },
     "firefox": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -99,7 +122,7 @@
     },
     "flake-utils": {
       "inputs": {
-        "systems": "systems"
+        "systems": "systems_3"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -117,7 +140,7 @@
     },
     "flake-utils_2": {
       "inputs": {
-        "systems": "systems_3"
+        "systems": "systems_4"
       },
       "locked": {
         "lastModified": 1731533236,
@@ -151,90 +174,40 @@
     },
     "hjem": {
       "inputs": {
-        "nix-darwin": "nix-darwin",
         "nixpkgs": [
-          "hjem-compat",
+          "eigenhome",
+          "rum",
           "nixpkgs"
         ],
         "smfh": "smfh"
       },
       "locked": {
-        "lastModified": 1772998047,
-        "narHash": "sha256-ffHf1XwyaEUfd49i2hDdhkjJcZzBJ36e2Qiex0UVgV8=",
+        "lastModified": 1756255328,
+        "narHash": "sha256-WJ70Dv+tJjIl7mMOqUgcdcz+RrujDRoeKptiU6oh1lI=",
         "owner": "feel-co",
         "repo": "hjem",
-        "rev": "63661135b11cf9461683fa1f65208263b545f5e0",
+        "rev": "2426d6ad20e767895e936ed0c9563cc4e2b6c96f",
         "type": "github"
       },
       "original": {
         "owner": "feel-co",
         "repo": "hjem",
-        "type": "github"
-      }
-    },
-    "hjem-compat": {
-      "inputs": {
-        "hjem": "hjem",
-        "hjem-rum": "hjem-rum",
-        "home-manager": "home-manager",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1773015439,
-        "narHash": "sha256-fN+7LFqdlw17MLW+HmHvgzPrHPV+iZZjQDDV71N7hog=",
-        "ref": "refs/heads/main",
-        "rev": "04e26f10d36174a4cf43958718b6544971c5f940",
-        "revCount": 31,
-        "type": "git",
-        "url": "file:///home/eigenmage/dev/projects/hjem-compat"
-      },
-      "original": {
-        "type": "git",
-        "url": "file:///home/eigenmage/dev/projects/hjem-compat"
-      }
-    },
-    "hjem-rum": {
-      "inputs": {
-        "hjem": [
-          "hjem-compat",
-          "hjem"
-        ],
-        "ndg": "ndg",
-        "nixpkgs": [
-          "hjem-compat",
-          "nixpkgs"
-        ],
-        "treefmt-nix": "treefmt-nix"
-      },
-      "locked": {
-        "lastModified": 1772915389,
-        "narHash": "sha256-xM7gYCLOUH2fnPgdst7HcPpEn6GlEOf7nelJVxJZ040=",
-        "owner": "snugnug",
-        "repo": "hjem-rum",
-        "rev": "3506a77b5cbb35640f7dac595f98b10bdbe07b15",
-        "type": "github"
-      },
-      "original": {
-        "owner": "snugnug",
-        "repo": "hjem-rum",
         "type": "github"
       }
     },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
-          "hjem-compat",
+          "eigenhome",
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1772985285,
-        "narHash": "sha256-wEEmvfqJcl9J0wyMgMrj1TixOgInBW/6tLPhWGoZE3s=",
+        "lastModified": 1773952365,
+        "narHash": "sha256-temgIjfdoniHw2vvUGM/BgVgIUig0quH2ClRfSnNk94=",
         "owner": "nix-community",
         "repo": "home-manager",
-        "rev": "5be5d8245cbc7bc0c09fbb5f38f23f223c543f85",
+        "rev": "9bc3ca1230d96119bdf61b9c3ec0c66a2b6eafdc",
         "type": "github"
       },
       "original": {
@@ -298,28 +271,6 @@
         "owner": "feel-co",
         "ref": "v2.5.1",
         "repo": "ndg",
-        "type": "github"
-      }
-    },
-    "nix-darwin": {
-      "inputs": {
-        "nixpkgs": [
-          "hjem-compat",
-          "hjem",
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1770922915,
-        "narHash": "sha256-6J/JoK9iL7sHvKJcGW2KId2agaKv1OGypsa7kN+ZBD4=",
-        "owner": "nix-darwin",
-        "repo": "nix-darwin",
-        "rev": "6c5a56295d2a24e43bcd8af838def1b9a95746b2",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nix-darwin",
-        "repo": "nix-darwin",
         "type": "github"
       }
     },
@@ -414,10 +365,10 @@
     },
     "root": {
       "inputs": {
+        "eigenhome": "eigenhome",
         "firefox": "firefox",
         "firefox-scripts": "firefox-scripts",
         "fx-autoconfig": "fx-autoconfig",
-        "hjem-compat": "hjem-compat",
         "home-manager": "home-manager_2",
         "nix-firefox-addons": "nix-firefox-addons",
         "nixpkgs": "nixpkgs_2",
@@ -425,11 +376,58 @@
         "textfox": "textfox"
       }
     },
+    "rum": {
+      "inputs": {
+        "hjem": "hjem",
+        "ndg": "ndg",
+        "nixpkgs": [
+          "eigenhome",
+          "nixpkgs"
+        ],
+        "treefmt-nix": "treefmt-nix"
+      },
+      "locked": {
+        "lastModified": 1772915389,
+        "narHash": "sha256-xM7gYCLOUH2fnPgdst7HcPpEn6GlEOf7nelJVxJZ040=",
+        "owner": "snugnug",
+        "repo": "hjem-rum",
+        "rev": "3506a77b5cbb35640f7dac595f98b10bdbe07b15",
+        "type": "github"
+      },
+      "original": {
+        "owner": "snugnug",
+        "repo": "hjem-rum",
+        "type": "github"
+      }
+    },
     "rust-overlay": {
       "inputs": {
         "nixpkgs": [
-          "hjem-compat",
+          "eigenhome",
+          "rum",
           "hjem",
+          "smfh",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1747622321,
+        "narHash": "sha256-W0dYIWgsUu6rvOJRtKLhKskkv0VhQhJYGNIq+gGUc8g=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "bd030fd9983f7fddf87be1c64aa3064c8afa24c4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
+      "inputs": {
+        "nixpkgs": [
+          "eigenhome",
           "smfh",
           "nixpkgs"
         ]
@@ -451,19 +449,43 @@
     "smfh": {
       "inputs": {
         "nixpkgs": [
-          "hjem-compat",
+          "eigenhome",
+          "rum",
           "hjem",
           "nixpkgs"
         ],
         "rust-overlay": "rust-overlay",
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1749906619,
+        "narHash": "sha256-/9Ww10kYopxfCNNnNDwENTubs7Wzqlw+O6PJAHNOYQw=",
+        "owner": "feel-co",
+        "repo": "smfh",
+        "rev": "39f5c06153f63100376bc607b1465850b6df77fd",
+        "type": "github"
+      },
+      "original": {
+        "owner": "feel-co",
+        "repo": "smfh",
+        "type": "github"
+      }
+    },
+    "smfh_2": {
+      "inputs": {
+        "nixpkgs": [
+          "eigenhome",
+          "nixpkgs"
+        ],
+        "rust-overlay": "rust-overlay_2",
         "systems": "systems_2"
       },
       "locked": {
-        "lastModified": 1771208268,
-        "narHash": "sha256-6zMgOPzBbTSm8jzPqmGcotjvkN3HzxcnMM8pW64JpZQ=",
+        "lastModified": 1773157716,
+        "narHash": "sha256-s75rkkrfle2g0/DTE0XaU9q+yTvrQHTQSrhMEPLGkIc=",
         "owner": "feel-co",
         "repo": "smfh",
-        "rev": "dd0a33fc9d1fe7c29da86225af4b4a47b1714839",
+        "rev": "dcc9937332ad77426fa2e8d6c5d8fed037689c69",
         "type": "github"
       },
       "original": {
@@ -517,6 +539,21 @@
         "type": "github"
       }
     },
+    "systems_4": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
     "textfox": {
       "inputs": {
         "firefox-addons": "firefox-addons",
@@ -541,8 +578,8 @@
     "treefmt-nix": {
       "inputs": {
         "nixpkgs": [
-          "hjem-compat",
-          "hjem-rum",
+          "eigenhome",
+          "rum",
           "nixpkgs"
         ]
       },

@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
     eigenhome = {
-      url = "github:starbaser/eigenhome";
+      url = "git+ssh://git@github.com/starbaser/eigenhome";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
