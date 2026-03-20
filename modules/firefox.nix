@@ -526,7 +526,6 @@ in
   # ── Tridactyl ────────────────────────────────────────────────────────────
   xdg.config.files = {
     "tridactyl/tridactylrc".source = ../config/tridactyl/tridactylrc;
-    "tridactyl/js/index.js".source = ../config/tridactyl/js/index.js;
     "tridactyl/themes/srcery.css".source = ../config/tridactyl/themes/srcery.css;
   };
 }
