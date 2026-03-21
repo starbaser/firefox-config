@@ -78,7 +78,7 @@
       # eigenhome module — add to eigenhome.extraModules
       # Consumer must provide srcery and theme via eigenhome.specialArgs
       # Consumer must have nur.overlays.default in nixpkgs overlays
-      hjemModules.firefox = import ./modules/firefox.nix {
+      homeModules.firefox = import ./modules/firefox.nix {
         inherit
           wrapHmModule
           hmSrc
