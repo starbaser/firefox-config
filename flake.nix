@@ -7,6 +7,7 @@
     eigenhome = {
       url = "git+ssh://git@github.com/starbaser/eigenhome";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
     };
 
     home-manager = {
