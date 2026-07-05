@@ -19,7 +19,7 @@
   fxAutoconfigSrc,
   firefoxScriptsSrc,
 }:
-{ pkgs, lib, srcery, theme, ... }:
+{ config, pkgs, lib, srcery, theme, ... }:
 
 let
   # ── fx-autoconfig: wrap nightly binary with program-level config ──────────
@@ -217,13 +217,16 @@ let
     '') allExtensionPackages}
   '';
 
+  firefoxConfigPath = "${config.xdg.configHome}/mozilla/firefox";
+  firefoxHomePath = lib.removePrefix "${config.home.homeDirectory}/" firefoxConfigPath;
+
   # IFD: enumerate XPI filenames at eval time → individual hjem file entries
   extensionFileEntries = lib.mapAttrs' (name: _: {
-    name = ".mozilla/firefox/${profilePath}/extensions/${name}";
+    name = "${firefoxHomePath}/${profilePath}/extensions/${name}";
     value = { source = "${extensionsFlat}/${name}"; };
   }) (builtins.readDir extensionsFlat);
 
-  chromePath = ".mozilla/firefox/${profilePath}/chrome";
+  chromePath = "${firefoxHomePath}/${profilePath}/chrome";
 in
 {
   # ── HM module imports ────────────────────────────────────────────────────
@@ -239,6 +242,7 @@ in
 
   programs.firefox = {
     enable = true;
+    configPath = firefoxConfigPath;
     package = null;
     nativeMessagingHosts = [
       pkgs.tridactyl-native
@@ -281,6 +285,7 @@ in
         "network.http.max-urgent-start-excessive-connections-per-host" = 5;
         "network.http.pacing.requests.enabled" = false;
         "network.dnsCacheExpiration" = 3600;
+        "network.trr.excluded-domains" = "mcp.eigenmage.com,www.mcp.eigenmage.com,ts.eigenmage.com";
         "network.ssl_tokens_cache_capacity" = 10240;
         "layout.css.grid-template-masonry-value.enabled" = true;
 
