@@ -2,7 +2,7 @@
 
 :root {
   --lwt-text-color: #fce8c3 !important;
-  --sidebar-min-width: 54px;
+  --sidebar-min-width: 52px;
   --sidebar-width: 192px;
   --button-size: 30px !important;
   --tf-rounding: 2px !important;
@@ -150,15 +150,15 @@ panel {
 }
 
 :root:not([titlepreface*="᠎"]) #userchrome-toggle-extended_n2ezr_ru-BAP {
-	--webextension-menupanel-image: var(--sidebar-opened-icon) !important;
-	--webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important;
-	--webextension-toolbar-image: var(--sidebar-opened-icon) !important;
-	--webextension-toolbar-image-dark: var(--sidebar-opened-icon) !important;
+  --webextension-menupanel-image: var(--sidebar-opened-icon) !important;
+  --webextension-menupanel-image-dark: var(--sidebar-opened-icon) !important;
+  --webextension-toolbar-image: var(--sidebar-opened-icon) !important;
+  --webextension-toolbar-image-dark: var(--sidebar-opened-icon) !important;
 }
 
 :root[titlepreface*="᠎"] #userchrome-toggle-extended_n2ezr_ru-BAP {
-	--webextension-menupanel-image: var(--sidebar-closed-icon) !important;
-	--webextension-menupanel-image-dark: var(--sidebar-closed-icon) !important;
-	--webextension-toolbar-image: var(--sidebar-closed-icon) !important;
-	--webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important;
+  --webextension-menupanel-image: var(--sidebar-closed-icon) !important;
+  --webextension-menupanel-image-dark: var(--sidebar-closed-icon) !important;
+  --webextension-toolbar-image: var(--sidebar-closed-icon) !important;
+  --webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important;
 }
