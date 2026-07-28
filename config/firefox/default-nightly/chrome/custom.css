@@ -156,3 +156,7 @@ panel {
   --webextension-toolbar-image: var(--sidebar-closed-icon) !important;
   --webextension-toolbar-image-dark: var(--sidebar-closed-icon) !important;
 }
+
+#sidebar-container {
+  display: none !important;
+}
