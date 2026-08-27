@@ -2,6 +2,12 @@
 
 A standalone Nix flake bundling Firefox Nightly, Textfox theming, fx-autoconfig (userChromeJS), NUR extensions, and tridactyl into a single eigenhome home module.
 
+`addons/` contains first-party unsigned WebExtensions (currently `account-switcher` — claude.ai /
+chatgpt.com session switching + usage meters) packaged as XPIs by `flake.nix` and sideloaded by
+`modules/firefox.nix`; unsigned loading relies on `xpinstall.signatures.required = false` (Nightly
+honors it).
+
+
 ## Cross-Project Documentation — first-party stack
 
 This project is part of Kyle's first-party stack (`~/dev/projects/*`). Sibling projects' curated

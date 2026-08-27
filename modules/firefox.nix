@@ -16,6 +16,7 @@
   hmSrc,
   firefoxNightlyPkg,
   textfoxPkg,
+  accountSwitcherXpi,
   fxAutoconfigSrc,
   firefoxScriptsSrc,
 }:
@@ -215,6 +216,7 @@ let
       srceryDark
       legacyBootstrapLoader
       legacyKeyconfig
+      accountSwitcherXpi
     ];
 
   # Flat derivation: all XPIs in one directory, dereferenced from store paths
@@ -341,6 +343,8 @@ in
         "pdfjs.enableScripting" = false;
         "extensions.enabledScopes" = 5;
         "extensions.autoDisableScopes" = 0;
+        # Nightly-only: allow unsigned sideloaded XPIs (local account-switcher add-on)
+        "xpinstall.signatures.required" = false;
         "network.http.referer.XOriginTrimmingPolicy" = 2;
         "privacy.userContext.ui.enabled" = true;
         "privacy.userContext.enabled" = true;

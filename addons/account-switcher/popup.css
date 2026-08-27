@@ -1,0 +1,118 @@
+/* Srcery palette — https://srcery-colors.github.io */
+:root {
+  --bg: #1c1b19;
+  --panel: #2d2c29;
+  --fg: #fce8c3;
+  --dim: #918175;
+  --accent: #68a8e4;
+  --ok: #519f50;
+  --warn: #fbb829;
+  --crit: #ef2f27;
+  --border: #4e4e4e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  width: 340px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.4 "Iosevka Custom", monospace;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+h1 {
+  font-size: 13px;
+  margin: 0;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 12px;
+  margin: 0 0 6px;
+  color: var(--dim);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+section.service {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+button {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+button:disabled { opacity: 0.45; cursor: default; }
+
+.status { margin-bottom: 8px; }
+.identity { color: var(--fg); margin-bottom: 6px; }
+.error { color: var(--crit); }
+.dim { color: var(--dim); }
+
+.meter { margin-bottom: 6px; }
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+}
+.meter-label { color: var(--dim); }
+.meter-pct { color: var(--fg); }
+.meter-bar {
+  height: 5px;
+  background: var(--panel);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 2px 0;
+}
+.meter-fill { height: 100%; }
+.meter-fill.ok { background: var(--ok); }
+.meter-fill.warn { background: var(--warn); }
+.meter-fill.crit { background: var(--crit); }
+.meter-reset { color: var(--dim); font-size: 11px; }
+
+.profiles { margin-bottom: 8px; }
+.profile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 6px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 4px;
+}
+.profile.active { border-color: var(--ok); }
+.profile-name { color: var(--fg); }
+.profile.active .profile-name::after { content: " ●"; color: var(--ok); }
+.profile-sub { color: var(--dim); font-size: 11px; }
+.profile-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+.save-form { display: flex; gap: 6px; }
+.save-form input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 6px;
+  font: inherit;
+}
+.save-form input:focus { outline: none; border-color: var(--accent); }

@@ -5,6 +5,16 @@ Firefox Nightly + Textfox + fx-autoconfig eigenhome module.
 Standalone flake that bundles Firefox Nightly, Textfox theming, fx-autoconfig (userChromeJS), NUR
 extensions, and tridactyl into a single eigenhome home module.
 
+## Local add-ons
+
+`addons/` holds first-party, unsigned WebExtensions zipped into XPIs by the flake (unsigned
+sideloading works because the module sets `xpinstall.signatures.required = false`, honored by
+Nightly):
+
+- `addons/account-switcher/` — claude.ai / chatgpt.com multi-account cookie switcher with plan and
+  usage-limit meters (5-hour, 7-day, Fable weekly). Build standalone with
+  `nix build .#account-switcher-xpi`.
+
 ## Integration
 
 ### NixOS flake input

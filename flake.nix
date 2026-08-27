@@ -63,6 +63,7 @@
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
+      pkgs = import nixpkgs { inherit system; };
 
       hmExtLib = lib.extend (
         self: super: {
@@ -74,8 +75,19 @@
 
       firefoxNightlyPkg = firefox.packages.${system}.firefox-nightly-bin;
       textfoxPkg = textfox.packages.${system}.default;
+
+      # Local unsigned add-on: claude.ai / chatgpt.com account switcher
+      accountSwitcherXpi = pkgs.runCommand "account-switcher-xpi" { nativeBuildInputs = [ pkgs.zip ]; } ''
+        dst="$out/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+        mkdir -p "$dst" work
+        cp -r ${./addons/account-switcher}/. work/
+        chmod -R u+w work
+        (cd work && zip -r -X "$dst/account-switcher@eigenmage.com.xpi" .)
+      '';
     in
     {
+      packages.${system}.account-switcher-xpi = accountSwitcherXpi;
+
       # eigenhome module — add to eigenhome.extraModules
       # Consumer must provide srcery and theme via eigenhome.specialArgs
       # Consumer must have nur.overlays.default in nixpkgs overlays
@@ -85,6 +97,7 @@
           hmSrc
           firefoxNightlyPkg
           textfoxPkg
+          accountSwitcherXpi
           ;
         fxAutoconfigSrc = fx-autoconfig;
         firefoxScriptsSrc = firefox-scripts;
