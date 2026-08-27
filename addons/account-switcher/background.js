@@ -22,7 +22,7 @@ const SERVICES = {
 };
 
 const POLL_ALARM = "account-switcher-poll";
-const POLL_PERIOD_MINUTES = 5;
+const POLL_PERIOD_MINUTES = 10;
 
 // ---------- storage helpers ----------
 
@@ -202,12 +202,26 @@ async function fetchClaudeState() {
   if (!org) return { error: "no organizations" };
   const orgId = org.uuid || org.id;
   const identity = org.name || null;
-  const plan = org.billing_type || org.rate_limit_tier || null;
+  const plan =
+    Array.isArray(org.capabilities) && org.capabilities.includes("claude_max")
+      ? "Max"
+      : org.rate_limit_tier || org.billing_type || null;
+
+  let nextBilling = null;
+  try {
+    const subResp = await fetch(`https://claude.ai/api/organizations/${orgId}/subscription_details`, opts);
+    if (subResp.ok) {
+      const sub = await subResp.json();
+      nextBilling = parseReset(sub.next_charge_at ?? sub.next_charge_date);
+    }
+  } catch (err) {
+    console.warn("[account-switcher] subscription_details failed", err);
+  }
 
   const usageResp = await fetch(`https://claude.ai/api/organizations/${orgId}/usage`, opts);
-  if (!usageResp.ok) return { identity, plan, error: `usage http ${usageResp.status}` };
+  if (!usageResp.ok) return { identity, plan, nextBilling, error: `usage http ${usageResp.status}` };
   const data = await usageResp.json();
-  return { identity, plan, meters: parseClaudeUsage(data), updatedAt: Date.now(), error: null };
+  return { identity, plan, nextBilling, meters: parseClaudeUsage(data), updatedAt: Date.now(), error: null };
 }
 
 async function fetchChatGPTState() {
@@ -223,6 +237,7 @@ async function fetchChatGPTState() {
   const headers = { authorization: `Bearer ${token}`, accept: "application/json" };
   let identity = (session.user && (session.user.email || session.user.name)) || null;
   let plan = null;
+  let nextBilling = null;
   const meters = [];
 
   try {
@@ -238,6 +253,22 @@ async function fetchChatGPTState() {
     }
   } catch (err) {
     console.warn("[account-switcher] backend-api/me failed", err);
+  }
+
+  try {
+    const aResp = await fetch("https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27", {
+      credentials: "include",
+      headers
+    });
+    if (aResp.ok) {
+      const a = await aResp.json();
+      const first = a.accounts && Object.values(a.accounts)[0];
+      plan = plan || (first && first.account && first.account.plan_type) || null;
+      const ent = first && first.entitlement;
+      if (ent) nextBilling = parseReset(ent.renews_at ?? ent.expires_at);
+    }
+  } catch (err) {
+    console.warn("[account-switcher] accounts/check failed", err);
   }
 
   try {
@@ -267,11 +298,22 @@ async function fetchChatGPTState() {
     console.warn("[account-switcher] wham/usage failed", err);
   }
 
-  return { identity, plan, meters, updatedAt: Date.now(), error: null };
+  return { identity, plan, nextBilling, meters, updatedAt: Date.now(), error: null };
+}
+
+// The generic weekly meter per service: Claude labels it "7-day", ChatGPT's
+// wham payload exposes it as secondary_window.
+function pickWeeklyMeter(state) {
+  const meters = (state && state.meters) || [];
+  return (
+    meters.find((m) => m.label === "7-day") ||
+    meters.find((m) => m.id === "secondary_window") ||
+    null
+  );
 }
 
 async function pollUsage() {
-  const { usage } = await getStore(["usage"]);
+  const { usage, profiles, activeProfile } = await getStore(["usage", "profiles", "activeProfile"]);
   const next = { ...usage };
   try {
     next.claude = await fetchClaudeState();
@@ -284,6 +326,28 @@ async function pollUsage() {
     next.chatgpt = { error: String((err && err.message) || err) };
   }
   await browser.storage.local.set({ usage: next });
+
+  // Stamp last-seen 7-day usage onto the active profile of each service, so
+  // profile rows can show a thin weekly bar even for inactive accounts
+  // (inactive ones keep the value from when they were last active).
+  let changed = false;
+  const nextProfiles = { ...profiles };
+  for (const service of Object.keys(SERVICES)) {
+    const active = activeProfile[service];
+    const state = next[service];
+    if (!active || !state || state.error) continue;
+    const weekly = pickWeeklyMeter(state);
+    if (!weekly) continue;
+    const svcProfiles = { ...(nextProfiles[service] || {}) };
+    if (!svcProfiles[active]) continue;
+    svcProfiles[active] = {
+      ...svcProfiles[active],
+      weekly: { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() }
+    };
+    nextProfiles[service] = svcProfiles;
+    changed = true;
+  }
+  if (changed) await setProfiles(nextProfiles);
 }
 
 // ---------- profile operations ----------
@@ -303,6 +367,7 @@ async function saveProfile(service, name) {
     savedAt: Date.now(),
     identity: svcUsage.identity || null,
     plan: svcUsage.plan || null,
+    nextBilling: svcUsage.nextBilling || null,
     cookies
   };
   const next = { ...profiles, [service]: svcProfiles };

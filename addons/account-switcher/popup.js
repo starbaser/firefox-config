@@ -61,8 +61,25 @@ function profileRow(service, name, profile, isActive) {
   const sub = [profile.identity, profile.plan].filter(Boolean).join(" · ");
   if (sub) info.append(el("div", "profile-sub", sub));
   info.append(
-    el("div", "profile-sub", `saved ${new Date(profile.savedAt).toLocaleDateString()}`)
+    el(
+      "div",
+      "profile-sub",
+      profile.nextBilling
+        ? `next billing ${new Date(profile.nextBilling).toLocaleDateString()}`
+        : `saved ${new Date(profile.savedAt).toLocaleDateString()}`
+    )
   );
+  if (profile.weekly && profile.weekly.percent != null) {
+    const bar = el("div", "profile-weekly-bar");
+    bar.title = `7-day usage: ${profile.weekly.percent}%`;
+    const fill = el("div", "profile-weekly-fill");
+    fill.style.width = `${Math.min(100, profile.weekly.percent)}%`;
+    fill.classList.add(
+      profile.weekly.percent >= 90 ? "crit" : profile.weekly.percent >= 70 ? "warn" : "ok"
+    );
+    bar.append(fill);
+    info.append(bar);
+  }
   row.append(info);
 
   const actions = el("div", "profile-actions");

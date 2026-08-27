@@ -102,6 +102,17 @@ button:disabled { opacity: 0.45; cursor: default; }
 .profile-name { color: var(--fg); }
 .profile.active .profile-name::after { content: " ●"; color: var(--ok); }
 .profile-sub { color: var(--dim); font-size: 11px; }
+.profile-weekly-bar {
+  height: 3px;
+  background: var(--panel);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.profile-weekly-fill { height: 100%; }
+.profile-weekly-fill.ok { background: var(--ok); }
+.profile-weekly-fill.warn { background: var(--warn); }
+.profile-weekly-fill.crit { background: var(--crit); }
 .profile-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .save-form { display: flex; gap: 6px; }
