@@ -19,36 +19,46 @@
   fxAutoconfigSrc,
   firefoxScriptsSrc,
 }:
-{ config, pkgs, lib, srcery, theme, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  srcery,
+  theme,
+  ...
+}:
 
 let
   # ── fx-autoconfig: wrap nightly binary with program-level config ──────────
-  firefoxNightlyAutoconfig = pkgs.runCommand "firefox-nightly-autoconfig" {
-    nativeBuildInputs = [ pkgs.rsync ];
-    meta = firefoxNightlyPkg.meta or { };
-  } ''
-    mkdir -p $out
-    rsync -aL ${firefoxNightlyPkg}/ $out/
+  firefoxNightlyAutoconfig =
+    pkgs.runCommand "firefox-nightly-autoconfig"
+      {
+        nativeBuildInputs = [ pkgs.rsync ];
+        meta = firefoxNightlyPkg.meta or { };
+      }
+      ''
+        mkdir -p $out
+        rsync -aL ${firefoxNightlyPkg}/ $out/
 
-    firefoxLib=$(find $out/lib -name "application.ini" -printf "%h" -quit 2>/dev/null || true)
-    if [ -z "$firefoxLib" ]; then
-      firefoxLib=$(find $out/lib -maxdepth 2 -type d -name "firefox*" | head -1)
-    fi
+        firefoxLib=$(find $out/lib -name "application.ini" -printf "%h" -quit 2>/dev/null || true)
+        if [ -z "$firefoxLib" ]; then
+          firefoxLib=$(find $out/lib -maxdepth 2 -type d -name "firefox*" | head -1)
+        fi
 
-    if [ -z "$firefoxLib" ]; then
-      echo "ERROR: Could not find firefox lib directory in ${firefoxNightlyPkg}"
-      find $out/lib -maxdepth 3 -type f | head -20
-      exit 1
-    fi
+        if [ -z "$firefoxLib" ]; then
+          echo "ERROR: Could not find firefox lib directory in ${firefoxNightlyPkg}"
+          find $out/lib -maxdepth 3 -type f | head -20
+          exit 1
+        fi
 
-    chmod u+w "$firefoxLib"
-    cp ${fxAutoconfigSrc}/program/config.js "$firefoxLib/config.js"
+        chmod u+w "$firefoxLib"
+        cp ${fxAutoconfigSrc}/program/config.js "$firefoxLib/config.js"
 
-    mkdir -p "$firefoxLib/defaults/pref"
-    chmod u+w "$firefoxLib/defaults" "$firefoxLib/defaults/pref" 2>/dev/null || true
-    cp ${fxAutoconfigSrc}/program/defaults/pref/config-prefs.js \
-       "$firefoxLib/defaults/pref/config-prefs.js"
-  '';
+        mkdir -p "$firefoxLib/defaults/pref"
+        chmod u+w "$firefoxLib/defaults" "$firefoxLib/defaults/pref" 2>/dev/null || true
+        cp ${fxAutoconfigSrc}/program/defaults/pref/config-prefs.js \
+           "$firefoxLib/defaults/pref/config-prefs.js"
+      '';
 
   # ── Srcery dark browser theme (not in nix-firefox-addons) ───────────────
   srceryDark = pkgs.stdenv.mkDerivation {
@@ -93,14 +103,14 @@ let
 
   # ── Textfox CSS generation ─────────────────────────────────────────────
   textfoxBaseVars = ''
-      --tf-font-family: "Iosevka Custom", Consolas, monospace;
-      --tf-font-size: 14px;
-      --tf-accent: #${srcery.primary.bright_white.hex};
-      --tf-background: #${srcery.base00};
-      --tf-border-color: #${srcery.primary.white.hex};
-      --tf-border-transition: 0.2s ease;
-      --tf-border-width: 2px;
-      --tf-border-radius: 4px;
+    --tf-font-family: "Iosevka Custom", Consolas, monospace;
+    --tf-font-size: 14px;
+    --tf-accent: #${srcery.primary.bright_white.hex};
+    --tf-background: #${srcery.base00};
+    --tf-border-color: #${srcery.primary.white.hex};
+    --tf-border-transition: 0.2s ease;
+    --tf-border-width: 2px;
+    --tf-border-radius: 4px;
   '';
 
   textfoxContentVars = ''
@@ -223,7 +233,9 @@ let
   # IFD: enumerate XPI filenames at eval time → individual hjem file entries
   extensionFileEntries = lib.mapAttrs' (name: _: {
     name = "${firefoxHomePath}/${profilePath}/extensions/${name}";
-    value = { source = "${extensionsFlat}/${name}"; };
+    value = {
+      source = "${extensionsFlat}/${name}";
+    };
   }) (builtins.readDir extensionsFlat);
 
   chromePath = "${firefoxHomePath}/${profilePath}/chrome";
@@ -246,14 +258,15 @@ in
     package = null;
     nativeMessagingHosts = [
       pkgs.tridactyl-native
-      (pkgs.writeTextDir "lib/mozilla/native-messaging-hosts/com.1password.1password.json"
-        (builtins.toJSON {
+      (pkgs.writeTextDir "lib/mozilla/native-messaging-hosts/com.1password.1password.json" (
+        builtins.toJSON {
           name = "com.1password.1password";
           description = "1Password";
           path = "/run/wrappers/bin/1Password-BrowserSupport";
           type = "stdio";
           allowed_extensions = [ "{d634138d-c276-4fc8-924b-40a0ea21d284}" ];
-        }))
+        }
+      ))
     ];
 
     policies = {
@@ -479,14 +492,13 @@ in
     {
       "${chromePath}/extensionOptionsMenu.uc.js".source =
         "${firefoxScriptsSrc}/chrome/extensionOptionsMenu.uc.js";
-      "${chromePath}/keymaps.uc.js".source =
-        ../config/firefox/default-nightly/chrome/keymaps.uc.js;
-      "${chromePath}/keyset.html".source =
-        ../config/firefox/default-nightly/chrome/keyset.html;
+      "${chromePath}/keymaps.uc.js".source = ../config/firefox/default-nightly/chrome/keymaps.uc.js;
+      "${chromePath}/oauth-popup-compat.uc.js".source =
+        ../config/firefox/default-nightly/chrome/oauth-popup-compat.uc.js;
+      "${chromePath}/keyset.html".source = ../config/firefox/default-nightly/chrome/keyset.html;
       "${chromePath}/rebuild_userChrome.uc.js".source =
         "${firefoxScriptsSrc}/chrome/rebuild_userChrome.uc.js";
-      "${chromePath}/styloaix.uc.js".source =
-        "${firefoxScriptsSrc}/chrome/styloaix.uc.js";
+      "${chromePath}/styloaix.uc.js".source = "${firefoxScriptsSrc}/chrome/styloaix.uc.js";
     }
 
     # Legacy bootstrap utils (for bootstrapLoader.xpi)
@@ -497,10 +509,8 @@ in
         "${firefoxScriptsSrc}/chrome/utils/RDFDataSource.sys.mjs";
       "${chromePath}/utils/RDFManifestConverter.sys.mjs".source =
         "${firefoxScriptsSrc}/chrome/utils/RDFManifestConverter.sys.mjs";
-      "${chromePath}/utils/userChrome.jsm".source =
-        "${firefoxScriptsSrc}/chrome/utils/userChrome.jsm";
-      "${chromePath}/utils/xPref.jsm".source =
-        "${firefoxScriptsSrc}/chrome/utils/xPref.jsm";
+      "${chromePath}/utils/userChrome.jsm".source = "${firefoxScriptsSrc}/chrome/utils/userChrome.jsm";
+      "${chromePath}/utils/xPref.jsm".source = "${firefoxScriptsSrc}/chrome/utils/xPref.jsm";
     }
 
     # StyloaiX editor UI
@@ -513,12 +523,10 @@ in
 
     # fx-autoconfig profile utils — loaded at startup via chrome.manifest
     {
-      "${chromePath}/utils/boot.sys.mjs".source =
-        "${fxAutoconfigSrc}/profile/chrome/utils/boot.sys.mjs";
+      "${chromePath}/utils/boot.sys.mjs".source = "${fxAutoconfigSrc}/profile/chrome/utils/boot.sys.mjs";
       "${chromePath}/utils/utils.sys.mjs".source =
         "${fxAutoconfigSrc}/profile/chrome/utils/utils.sys.mjs";
-      "${chromePath}/utils/fs.sys.mjs".source =
-        "${fxAutoconfigSrc}/profile/chrome/utils/fs.sys.mjs";
+      "${chromePath}/utils/fs.sys.mjs".source = "${fxAutoconfigSrc}/profile/chrome/utils/fs.sys.mjs";
       "${chromePath}/utils/uc_api.sys.mjs".source =
         "${fxAutoconfigSrc}/profile/chrome/utils/uc_api.sys.mjs";
       "${chromePath}/utils/module_loader.mjs".source =
