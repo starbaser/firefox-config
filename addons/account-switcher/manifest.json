@@ -8,6 +8,8 @@
     "storage",
     "tabs",
     "alarms",
+    "webRequest",
+    "webRequestBlocking",
     "https://claude.ai/*",
     "https://*.claude.ai/*",
     "https://chatgpt.com/*",

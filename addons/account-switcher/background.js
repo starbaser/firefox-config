@@ -23,6 +23,11 @@ const SERVICES = {
 
 const POLL_ALARM = "account-switcher-poll";
 const POLL_PERIOD_MINUTES = 10;
+const STALE_MS = POLL_PERIOD_MINUTES * 60 * 1000;
+
+function isFresh(ts) {
+  return typeof ts === "number" && Date.now() - ts < STALE_MS;
+}
 
 // ---------- storage helpers ----------
 
@@ -36,7 +41,81 @@ async function getStore(keys) {
 }
 
 async function setProfiles(profiles) {
+  profileCache = profiles;
   await browser.storage.local.set({ profiles });
+}
+
+// ---------- per-profile request auth ----------
+//
+// The live usage endpoints answer for whatever session is in the browser's
+// cookie jar. To poll profiles that are NOT active, we attach that profile's
+// cookies as a manual Cookie header (never touching the jar): the fetch sets
+// credentials:"omit" plus an x-acct-switcher-profile marker header, and this
+// blocking webRequest listener swaps in the profile's cookies and strips the
+// marker. Extension pages are CORS-exempt for permitted hosts, so the custom
+// header triggers no preflight.
+
+let profileCache = {};
+browser.storage.local.get("profiles").then((s) => {
+  profileCache = s.profiles || {};
+});
+
+const PROFILE_MARKER = "x-acct-switcher-profile";
+
+function cookieHeaderFor(profile, host) {
+  const now = Date.now() / 1000;
+  return (profile.cookies || [])
+    .filter((c) => {
+      const bare = c.domain.replace(/^\./, "");
+      const hostMatch = c.domain.startsWith(".")
+        ? host === bare || host.endsWith(`.${bare}`)
+        : host === bare;
+      const notExpired = !c.expirationDate || c.expirationDate > now;
+      return hostMatch && notExpired;
+    })
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+}
+
+browser.webRequest.onBeforeSendHeaders.addListener(
+  (details) => {
+    if (details.tabId !== -1) return {};
+    const headers = details.requestHeaders || [];
+    const marker = headers.find((h) => h.name.toLowerCase() === PROFILE_MARKER);
+    if (!marker) return {};
+    const sep = marker.value.indexOf(":");
+    const service = marker.value.slice(0, sep);
+    const name = marker.value.slice(sep + 1);
+    const profile = profileCache[service] && profileCache[service][name];
+    const out = headers.filter((h) => h.name.toLowerCase() !== PROFILE_MARKER);
+    if (profile) {
+      const value = cookieHeaderFor(profile, new URL(details.url).host);
+      const existing = out.find((h) => h.name.toLowerCase() === "cookie");
+      if (existing) existing.value = value;
+      else out.push({ name: "Cookie", value });
+    }
+    return { requestHeaders: out };
+  },
+  {
+    urls: [
+      "https://claude.ai/api/*",
+      "https://chatgpt.com/api/*",
+      "https://chatgpt.com/backend-api/*"
+    ]
+  },
+  ["blocking", "requestHeaders"]
+);
+
+// prof = { service, name } to authenticate as a stored profile; omitted = live jar.
+function authedFetch(url, opts = {}, prof = null) {
+  const o = { ...opts, headers: { ...(opts.headers || {}) } };
+  if (prof) {
+    o.credentials = "omit";
+    o.headers[PROFILE_MARKER] = `${prof.service}:${prof.name}`;
+  } else {
+    o.credentials = "include";
+  }
+  return fetch(url, o);
 }
 
 // ---------- cookie snapshot / restore ----------
@@ -190,9 +269,9 @@ function parseClaudeUsage(data) {
   return meters;
 }
 
-async function fetchClaudeState() {
-  const opts = { credentials: "include", headers: { accept: "application/json" } };
-  const orgsResp = await fetch("https://claude.ai/api/organizations", opts);
+async function fetchClaudeState(prof = null) {
+  const opts = { headers: { accept: "application/json" } };
+  const orgsResp = await authedFetch("https://claude.ai/api/organizations", opts, prof);
   if (orgsResp.status === 401 || orgsResp.status === 403) return { error: "not signed in" };
   if (!orgsResp.ok) return { error: `organizations http ${orgsResp.status}` };
   const orgs = await orgsResp.json();
@@ -209,7 +288,7 @@ async function fetchClaudeState() {
 
   let nextBilling = null;
   try {
-    const subResp = await fetch(`https://claude.ai/api/organizations/${orgId}/subscription_details`, opts);
+    const subResp = await authedFetch(`https://claude.ai/api/organizations/${orgId}/subscription_details`, opts, prof);
     if (subResp.ok) {
       const sub = await subResp.json();
       nextBilling = parseReset(sub.next_charge_at ?? sub.next_charge_date);
@@ -218,30 +297,34 @@ async function fetchClaudeState() {
     console.warn("[account-switcher] subscription_details failed", err);
   }
 
-  const usageResp = await fetch(`https://claude.ai/api/organizations/${orgId}/usage`, opts);
+  const usageResp = await authedFetch(`https://claude.ai/api/organizations/${orgId}/usage`, opts, prof);
   if (!usageResp.ok) return { identity, plan, nextBilling, error: `usage http ${usageResp.status}` };
   const data = await usageResp.json();
   return { identity, plan, nextBilling, meters: parseClaudeUsage(data), updatedAt: Date.now(), error: null };
 }
 
-async function fetchChatGPTState() {
-  const sResp = await fetch("https://chatgpt.com/api/auth/session", {
-    credentials: "include",
-    headers: { accept: "application/json" }
-  });
+async function fetchChatGPTState(prof = null) {
+  const sResp = await authedFetch(
+    "https://chatgpt.com/api/auth/session",
+    { headers: { accept: "application/json" } },
+    prof
+  );
   if (!sResp.ok) return { error: "not signed in" };
   const session = await sResp.json();
   const token = session && session.accessToken;
   if (!token) return { error: "not signed in" };
 
   const headers = { authorization: `Bearer ${token}`, accept: "application/json" };
+  // With a profile, the Bearer token identifies the account; omit credentials
+  // so the live jar can't bleed into the request.
+  const bearerCreds = prof ? "omit" : "include";
   let identity = (session.user && (session.user.email || session.user.name)) || null;
   let plan = null;
   let nextBilling = null;
   const meters = [];
 
   try {
-    const meResp = await fetch("https://chatgpt.com/backend-api/me", { credentials: "include", headers });
+    const meResp = await fetch("https://chatgpt.com/backend-api/me", { credentials: bearerCreds, headers });
     if (meResp.ok) {
       const me = await meResp.json();
       identity = identity || me.email || me.name || null;
@@ -257,7 +340,7 @@ async function fetchChatGPTState() {
 
   try {
     const aResp = await fetch("https://chatgpt.com/backend-api/accounts/check/v4-2023-04-27", {
-      credentials: "include",
+      credentials: bearerCreds,
       headers
     });
     if (aResp.ok) {
@@ -272,7 +355,7 @@ async function fetchChatGPTState() {
   }
 
   try {
-    const uResp = await fetch("https://chatgpt.com/backend-api/wham/usage", { credentials: "include", headers });
+    const uResp = await fetch("https://chatgpt.com/backend-api/wham/usage", { credentials: bearerCreds, headers });
     if (uResp.ok) {
       const u = await uResp.json();
       plan = plan || u.plan_type || null;
@@ -312,40 +395,67 @@ function pickWeeklyMeter(state) {
   );
 }
 
-async function pollUsage() {
+// forceLive: bypass the staleness gate for the live-session fetch (used after
+// a switch/save, where the cached state belongs to the previous account, and
+// by the popup's refresh button). Inactive profiles are always staleness-gated.
+async function pollUsage(forceLive = false) {
   const { usage, profiles, activeProfile } = await getStore(["usage", "profiles", "activeProfile"]);
   const next = { ...usage };
-  try {
-    next.claude = await fetchClaudeState();
-  } catch (err) {
-    next.claude = { error: String((err && err.message) || err) };
-  }
-  try {
-    next.chatgpt = await fetchChatGPTState();
-  } catch (err) {
-    next.chatgpt = { error: String((err && err.message) || err) };
+  for (const service of Object.keys(SERVICES)) {
+    const cached = usage[service];
+    if (!forceLive && cached && !cached.error && isFresh(cached.updatedAt)) continue;
+    try {
+      next[service] = service === "claude" ? await fetchClaudeState() : await fetchChatGPTState();
+    } catch (err) {
+      next[service] = { error: String((err && err.message) || err) };
+    }
   }
   await browser.storage.local.set({ usage: next });
 
-  // Stamp last-seen 7-day usage onto the active profile of each service, so
-  // profile rows can show a thin weekly bar even for inactive accounts
-  // (inactive ones keep the value from when they were last active).
+  // Refresh every stored profile. The active one is stamped from the live
+  // state; inactive ones are polled with their own cookies (webRequest Cookie
+  // rewrite — the browser jar is never touched), skipping any fetched
+  // recently. Stale/dead sessions keep their last-known values and are
+  // retried next cycle.
   let changed = false;
   const nextProfiles = { ...profiles };
   for (const service of Object.keys(SERVICES)) {
-    const active = activeProfile[service];
-    const state = next[service];
-    if (!active || !state || state.error) continue;
-    const weekly = pickWeeklyMeter(state);
-    if (!weekly) continue;
     const svcProfiles = { ...(nextProfiles[service] || {}) };
-    if (!svcProfiles[active]) continue;
-    svcProfiles[active] = {
-      ...svcProfiles[active],
-      weekly: { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() }
+    const names = Object.keys(svcProfiles);
+    if (names.length === 0) continue;
+    const active = activeProfile[service];
+
+    const apply = (name, state) => {
+      if (!state || state.error) return;
+      const weekly = pickWeeklyMeter(state);
+      const p = svcProfiles[name];
+      svcProfiles[name] = {
+        ...p,
+        fetchedAt: Date.now(),
+        identity: state.identity || p.identity,
+        plan: state.plan || p.plan,
+        nextBilling: state.nextBilling || p.nextBilling || null,
+        weekly: weekly ? { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() } : p.weekly
+      };
+      changed = true;
     };
+
+    if (active && svcProfiles[active]) apply(active, next[service]);
+
+    for (const name of names) {
+      if (name === active) continue;
+      if (isFresh(svcProfiles[name].fetchedAt)) continue;
+      try {
+        const state =
+          service === "claude"
+            ? await fetchClaudeState({ service, name })
+            : await fetchChatGPTState({ service, name });
+        apply(name, state);
+      } catch (err) {
+        console.warn(`[account-switcher] poll failed for ${service}/${name}`, err);
+      }
+    }
     nextProfiles[service] = svcProfiles;
-    changed = true;
   }
   if (changed) await setProfiles(nextProfiles);
 }
@@ -357,7 +467,7 @@ async function saveProfile(service, name) {
   if (cookies.length === 0) return { ok: false, error: "no cookies found — sign in first" };
 
   // Identity/plan of the session being saved, from the live usage fetch.
-  await pollUsage();
+  await pollUsage(true);
   const { profiles, activeProfile, usage } = await getStore(["profiles", "activeProfile", "usage"]);
   const svcUsage = usage[service] || {};
   if (svcUsage.error) return { ok: false, error: svcUsage.error };
@@ -385,7 +495,9 @@ async function switchProfile(service, name) {
   await restoreCookies(profile.cookies);
   await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: name } });
   reloadServiceTabs(service);
-  pollUsage();
+  // The live session just changed accounts — cached usage belongs to the
+  // previous one, so force the live fetch.
+  pollUsage(true);
   return { ok: true };
 }
 
@@ -417,7 +529,7 @@ browser.runtime.onMessage.addListener((msg) => {
     case "delete-profile":
       return run(deleteProfile(msg.service, msg.name));
     case "refresh-usage":
-      return run(pollUsage().then(() => ({ ok: true })));
+      return run(pollUsage(true).then(() => ({ ok: true })));
     default:
       return undefined;
   }
