@@ -113,6 +113,7 @@ button:disabled { opacity: 0.45; cursor: default; }
 .profile-weekly-fill.ok { background: var(--ok); }
 .profile-weekly-fill.warn { background: var(--warn); }
 .profile-weekly-fill.crit { background: var(--crit); }
+.profile-weekly-bar.fable { margin-top: 2px; }
 .profile-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
 .save-form { display: flex; gap: 6px; }

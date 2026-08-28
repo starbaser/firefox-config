@@ -53,6 +53,16 @@ function meterEl(meter) {
   return row;
 }
 
+function thinMeterBar(data, title, extraClass) {
+  const bar = el("div", "profile-weekly-bar" + (extraClass ? ` ${extraClass}` : ""));
+  bar.title = title;
+  const fill = el("div", "profile-weekly-fill");
+  fill.style.width = `${Math.min(100, data.percent)}%`;
+  fill.classList.add(data.percent >= 90 ? "crit" : data.percent >= 70 ? "warn" : "ok");
+  bar.append(fill);
+  return bar;
+}
+
 function profileRow(service, name, profile, isActive) {
   const row = el("div", "profile" + (isActive ? " active" : ""));
   const info = el("div", "profile-info");
@@ -70,15 +80,10 @@ function profileRow(service, name, profile, isActive) {
     )
   );
   if (profile.weekly && profile.weekly.percent != null) {
-    const bar = el("div", "profile-weekly-bar");
-    bar.title = `7-day usage: ${profile.weekly.percent}%`;
-    const fill = el("div", "profile-weekly-fill");
-    fill.style.width = `${Math.min(100, profile.weekly.percent)}%`;
-    fill.classList.add(
-      profile.weekly.percent >= 90 ? "crit" : profile.weekly.percent >= 70 ? "warn" : "ok"
-    );
-    bar.append(fill);
-    info.append(bar);
+    info.append(thinMeterBar(profile.weekly, `7-day usage: ${profile.weekly.percent}%`));
+  }
+  if (profile.fable && profile.fable.percent != null) {
+    info.append(thinMeterBar(profile.fable, `Fable 7-day: ${profile.fable.percent}%`, "fable"));
   }
   row.append(info);
 

@@ -405,6 +405,13 @@ function pickWeeklyMeter(state) {
   );
 }
 
+// Claude-only model-scoped weekly meter ("7-day Fable", from limits[] or a
+// legacy seven_day_fable key).
+function pickFableMeter(state) {
+  const meters = (state && state.meters) || [];
+  return meters.find((m) => /fable/i.test(m.label)) || null;
+}
+
 // forceLive: bypass the staleness gate for the live-session fetch (used after
 // a switch/save, where the cached state belongs to the previous account, and
 // by the popup's refresh button). Inactive profiles are always staleness-gated.
@@ -438,6 +445,7 @@ async function pollUsage(forceLive = false) {
     const apply = (name, state) => {
       if (!state || state.error) return;
       const weekly = pickWeeklyMeter(state);
+      const fable = pickFableMeter(state);
       const p = svcProfiles[name];
       svcProfiles[name] = {
         ...p,
@@ -445,7 +453,8 @@ async function pollUsage(forceLive = false) {
         identity: state.identity || p.identity,
         plan: state.plan || p.plan,
         nextBilling: state.nextBilling || p.nextBilling || null,
-        weekly: weekly ? { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() } : p.weekly
+        weekly: weekly ? { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() } : p.weekly,
+        fable: fable ? { percent: fable.percent, updatedAt: state.updatedAt || Date.now() } : p.fable
       };
       changed = true;
     };
