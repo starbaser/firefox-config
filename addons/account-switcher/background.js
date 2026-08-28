@@ -360,20 +360,27 @@ async function fetchChatGPTState(prof = null) {
       const u = await uResp.json();
       plan = plan || u.plan_type || null;
       const rl = u.rate_limits || u.rate_limit || u;
-      const windows = [
-        ["primary_window", "Primary window"],
-        ["secondary_window", "Secondary window"]
-      ];
-      for (const [key, label] of windows) {
+      // Label windows by their actual length: on some plans the primary window
+      // IS the weekly one (limit_window_seconds = 604800) and secondary is null.
+      for (const key of ["primary_window", "secondary_window"]) {
         const w = rl && rl[key];
         if (!w) continue;
         const pct = numberOrNull(w.used_percent) ?? numberOrNull(w.utilization);
         if (pct == null) continue;
+        const secs = numberOrNull(w.limit_window_seconds) ?? numberOrNull(w.window_seconds);
+        const label = secs
+          ? secs >= 86400
+            ? `${Math.round(secs / 86400)}-day`
+            : `${Math.round(secs / 3600)}-hour`
+          : key === "primary_window"
+            ? "Primary window"
+            : "Secondary window";
         meters.push({
           id: key,
           label,
           percent: clampPct(pct),
-          resetsAt: parseReset(w.reset_at ?? w.resets_at)
+          resetsAt: parseReset(w.reset_at ?? w.resets_at),
+          windowSeconds: secs
         });
       }
     }
@@ -384,13 +391,16 @@ async function fetchChatGPTState(prof = null) {
   return { identity, plan, nextBilling, meters, updatedAt: Date.now(), error: null };
 }
 
-// The generic weekly meter per service: Claude labels it "7-day", ChatGPT's
-// wham payload exposes it as secondary_window.
+// The generic weekly meter per service: Claude labels it "7-day"; ChatGPT
+// windows are labeled by duration, so any day-plus window qualifies.
 function pickWeeklyMeter(state) {
   const meters = (state && state.meters) || [];
   return (
     meters.find((m) => m.label === "7-day") ||
     meters.find((m) => m.id === "secondary_window") ||
+    meters
+      .filter((m) => (m.windowSeconds || 0) >= 86400)
+      .sort((a, b) => b.windowSeconds - a.windowSeconds)[0] ||
     null
   );
 }
