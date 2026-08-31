@@ -1,7 +1,7 @@
 /* Account Switcher — popup */
 
 const SERVICE_LABELS = { claude: "Claude", chatgpt: "ChatGPT" };
-const SERVICE_ORDER = ["claude", "chatgpt"];
+const SERVICE_ORDER = ["chatgpt", "claude"];
 
 const servicesEl = document.getElementById("services");
 document.getElementById("refresh").addEventListener("click", async (ev) => {

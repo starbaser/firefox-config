@@ -15,7 +15,7 @@
 
 body {
   margin: 0;
-  width: 340px;
+  width: 680px;
   background: var(--bg);
   color: var(--fg);
   font: 13px/1.4 "Iosevka Custom", monospace;
@@ -45,10 +45,15 @@ h2 {
   text-transform: uppercase;
 }
 
+#services { display: flex; }
+
 section.service {
+  flex: 1 1 0;
+  min-width: 0;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
+section.service:last-child { border-right: none; }
 
 button {
   background: var(--panel);
