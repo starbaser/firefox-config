@@ -79,6 +79,9 @@ function profileRow(service, name, profile, isActive) {
         : `saved ${new Date(profile.savedAt).toLocaleDateString()}`
     )
   );
+  if (service === "chatgpt" && profile.codexResets != null) {
+    info.append(el("div", "profile-sub", `codex resets: ${profile.codexResets}`));
+  }
   if (profile.weekly && profile.weekly.percent != null) {
     info.append(thinMeterBar(profile.weekly, `7-day usage: ${profile.weekly.percent}%`));
   }

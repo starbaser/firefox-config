@@ -321,6 +321,7 @@ async function fetchChatGPTState(prof = null) {
   let identity = (session.user && (session.user.email || session.user.name)) || null;
   let plan = null;
   let nextBilling = null;
+  let codexResets = null;
   const meters = [];
 
   try {
@@ -359,6 +360,8 @@ async function fetchChatGPTState(prof = null) {
     if (uResp.ok) {
       const u = await uResp.json();
       plan = plan || u.plan_type || null;
+      const rrc = u.rate_limit_reset_credits;
+      if (rrc) codexResets = numberOrNull(rrc.available_count);
       const rl = u.rate_limits || u.rate_limit || u;
       // Label windows by their actual length: on some plans the primary window
       // IS the weekly one (limit_window_seconds = 604800) and secondary is null.
@@ -388,7 +391,7 @@ async function fetchChatGPTState(prof = null) {
     console.warn("[account-switcher] wham/usage failed", err);
   }
 
-  return { identity, plan, nextBilling, meters, updatedAt: Date.now(), error: null };
+  return { identity, plan, nextBilling, codexResets, meters, updatedAt: Date.now(), error: null };
 }
 
 // The generic weekly meter per service: Claude labels it "7-day"; ChatGPT
@@ -453,6 +456,7 @@ async function pollUsage(forceLive = false) {
         identity: state.identity || p.identity,
         plan: state.plan || p.plan,
         nextBilling: state.nextBilling || p.nextBilling || null,
+        codexResets: state.codexResets ?? p.codexResets ?? null,
         weekly: weekly ? { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() } : p.weekly,
         fable: fable ? { percent: fable.percent, updatedAt: state.updatedAt || Date.now() } : p.fable
       };
@@ -497,6 +501,7 @@ async function saveProfile(service, name) {
     identity: svcUsage.identity || null,
     plan: svcUsage.plan || null,
     nextBilling: svcUsage.nextBilling || null,
+    codexResets: svcUsage.codexResets ?? null,
     cookies
   };
   const next = { ...profiles, [service]: svcProfiles };
