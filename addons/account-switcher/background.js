@@ -457,8 +457,12 @@ async function pollUsage(forceLive = false) {
         plan: state.plan || p.plan,
         nextBilling: state.nextBilling || p.nextBilling || null,
         codexResets: state.codexResets ?? p.codexResets ?? null,
-        weekly: weekly ? { percent: weekly.percent, updatedAt: state.updatedAt || Date.now() } : p.weekly,
-        fable: fable ? { percent: fable.percent, updatedAt: state.updatedAt || Date.now() } : p.fable
+        weekly: weekly
+          ? { percent: weekly.percent, resetsAt: weekly.resetsAt ?? null, updatedAt: state.updatedAt || Date.now() }
+          : p.weekly,
+        fable: fable
+          ? { percent: fable.percent, resetsAt: fable.resetsAt ?? null, updatedAt: state.updatedAt || Date.now() }
+          : p.fable
       };
       changed = true;
     };

@@ -54,13 +54,17 @@ function meterEl(meter) {
 }
 
 function thinMeterBar(data, title, extraClass) {
-  const bar = el("div", "profile-weekly-bar" + (extraClass ? ` ${extraClass}` : ""));
-  bar.title = title;
+  const wrap = el("div", "profile-weekly" + (extraClass ? ` ${extraClass}` : ""));
+  const reset = fmtReset(data.resetsAt);
+  const bar = el("div", "profile-weekly-bar");
+  bar.title = reset ? `${title} · ${reset}` : title;
   const fill = el("div", "profile-weekly-fill");
   fill.style.width = `${Math.min(100, data.percent)}%`;
   fill.classList.add(data.percent >= 90 ? "crit" : data.percent >= 70 ? "warn" : "ok");
   bar.append(fill);
-  return bar;
+  wrap.append(bar);
+  if (reset) wrap.append(el("div", "meter-reset", reset));
+  return wrap;
 }
 
 function profileRow(service, name, profile, isActive) {
