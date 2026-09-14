@@ -4,6 +4,20 @@ const SERVICE_LABELS = { claude: "Claude", chatgpt: "ChatGPT" };
 const SERVICE_ORDER = ["chatgpt", "claude"];
 
 const servicesEl = document.getElementById("services");
+document.getElementById("export").addEventListener("click", async (ev) => {
+  ev.target.disabled = true;
+  const res = await browser.runtime.sendMessage({ type: "export-profiles" });
+  if (res && res.ok) {
+    const blob = new Blob([JSON.stringify(res, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `account-switcher-profiles-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  ev.target.disabled = false;
+});
 document.getElementById("refresh").addEventListener("click", async (ev) => {
   ev.target.disabled = true;
   await browser.runtime.sendMessage({ type: "refresh-usage" });

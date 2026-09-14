@@ -558,6 +558,16 @@ browser.runtime.onMessage.addListener((msg) => {
       return run(deleteProfile(msg.service, msg.name));
     case "refresh-usage":
       return run(pollUsage(true).then(() => ({ ok: true })));
+    case "export-profiles":
+      return run(
+        getStore(["profiles", "activeProfile"]).then((s) => ({
+          ok: true,
+          version: 1,
+          exportedAt: Date.now(),
+          profiles: s.profiles,
+          activeProfile: s.activeProfile
+        }))
+      );
     default:
       return undefined;
   }
