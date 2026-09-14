@@ -49,6 +49,20 @@ h2 {
 
 #services { display: flex; }
 
+#statuses {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+section.status-panel {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 10px 12px;
+  border-right: 1px solid var(--border);
+}
+section.status-panel:last-child { border-right: none; }
+section.status-panel .status { margin-bottom: 0; }
+
 section.service {
   flex: 1 1 0;
   min-width: 0;
@@ -94,7 +108,12 @@ button:disabled { opacity: 0.45; cursor: default; }
 .meter-fill.crit { background: var(--crit); }
 .meter-reset { color: var(--dim); font-size: 11px; }
 
-.profiles { margin-bottom: 8px; }
+.profiles {
+  /* Fixed height keeps both service lists bottom-aligned; overflow scrolls. */
+  height: 240px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
 .profile {
   display: flex;
   align-items: center;

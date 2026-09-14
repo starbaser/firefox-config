@@ -4,6 +4,7 @@ const SERVICE_LABELS = { claude: "Claude", chatgpt: "ChatGPT" };
 const SERVICE_ORDER = ["chatgpt", "claude"];
 
 const servicesEl = document.getElementById("services");
+const statusesEl = document.getElementById("statuses");
 document.getElementById("export").addEventListener("click", async (ev) => {
   ev.target.disabled = true;
   const res = await browser.runtime.sendMessage({ type: "export-profiles" });
@@ -132,20 +133,6 @@ function serviceSection(service, state) {
   const section = el("section", "service");
   section.append(el("h2", null, SERVICE_LABELS[service]));
 
-  const usage = (state.usage && state.usage[service]) || null;
-  const status = el("div", "status");
-  if (usage && !usage.error) {
-    const who = [usage.identity, usage.plan].filter(Boolean).join(" · ");
-    status.append(el("div", "identity", who || "signed in"));
-    const meterList = el("div", "meters");
-    for (const m of usage.meters || []) meterList.append(meterEl(m));
-    if ((usage.meters || []).length === 0) meterList.append(el("div", "dim", "no usage data"));
-    status.append(meterList);
-  } else {
-    status.append(el("div", "error", (usage && usage.error) || "no data yet"));
-  }
-  section.append(status);
-
   const svcProfiles = (state.profiles && state.profiles[service]) || {};
   const active = state.activeProfile && state.activeProfile[service];
   const names = Object.keys(svcProfiles).sort();
@@ -188,11 +175,34 @@ function serviceSection(service, state) {
   return section;
 }
 
+// Bottom bar: the live session's full status for each service.
+function statusSection(service, state) {
+  const panel = el("section", "status-panel");
+  panel.append(el("h2", null, SERVICE_LABELS[service]));
+
+  const usage = (state.usage && state.usage[service]) || null;
+  const status = el("div", "status");
+  if (usage && !usage.error) {
+    const who = [usage.identity, usage.plan].filter(Boolean).join(" · ");
+    status.append(el("div", "identity", who || "signed in"));
+    const meterList = el("div", "meters");
+    for (const m of usage.meters || []) meterList.append(meterEl(m));
+    if ((usage.meters || []).length === 0) meterList.append(el("div", "dim", "no usage data"));
+    status.append(meterList);
+  } else {
+    status.append(el("div", "error", (usage && usage.error) || "no data yet"));
+  }
+  panel.append(status);
+  return panel;
+}
+
 async function render() {
   const state = await browser.runtime.sendMessage({ type: "get-state" });
   servicesEl.textContent = "";
+  statusesEl.textContent = "";
   for (const service of SERVICE_ORDER) {
     servicesEl.append(serviceSection(service, state || {}));
+    statusesEl.append(statusSection(service, state || {}));
   }
 }
 
