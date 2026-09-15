@@ -68,6 +68,8 @@ section.service {
   min-width: 0;
   padding: 10px 12px;
   border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
 }
 section.service:last-child { border-right: none; }
 
@@ -109,9 +111,9 @@ button:disabled { opacity: 0.45; cursor: default; }
 .meter-reset { color: var(--dim); font-size: 11px; }
 
 .profiles {
-  /* Fixed height keeps both service lists bottom-aligned; overflow scrolls. */
-  height: 240px;
-  overflow-y: auto;
+  /* Grows with content; flex: 1 keeps both columns' save forms bottom-aligned.
+   * No inner scroll — the popup itself scrolls only once Firefox caps its height. */
+  flex: 1;
   margin-bottom: 8px;
 }
 .profile {
