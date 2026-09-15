@@ -129,6 +129,50 @@ function profileRow(service, name, profile, isActive) {
   return row;
 }
 
+// Synthetic entry for the browser's own session — the state that is live
+// whenever no profile overrides the service.
+function defaultRow(service, state) {
+  const active = state.activeProfile && state.activeProfile[service];
+  const isDefault = !active;
+  const row = el("div", "profile default" + (isDefault ? " active" : ""));
+  const info = el("div", "profile-info");
+  info.append(el("div", "profile-name", "Browser session"));
+  if (isDefault) {
+    const usage = (state.usage && state.usage[service]) || null;
+    const sub =
+      usage && !usage.error
+        ? [usage.identity, usage.plan].filter(Boolean).join(" · ")
+        : null;
+    info.append(el("div", "profile-sub", sub || "live cookies"));
+  } else {
+    const snapshot = state.defaultSessions && state.defaultSessions[service];
+    info.append(
+      el(
+        "div",
+        "profile-sub",
+        snapshot
+          ? `held since ${new Date(snapshot.savedAt).toLocaleDateString()}`
+          : "no saved session"
+      )
+    );
+  }
+  row.append(info);
+
+  const actions = el("div", "profile-actions");
+  if (!isDefault) {
+    const restoreBtn = el("button", "switch", "Restore");
+    restoreBtn.title = `Unselect ${active} and return to the browser's own session`;
+    restoreBtn.addEventListener("click", async () => {
+      restoreBtn.disabled = true;
+      await browser.runtime.sendMessage({ type: "unselect-profile", service });
+      await render();
+    });
+    actions.append(restoreBtn);
+  }
+  row.append(actions);
+  return row;
+}
+
 function serviceSection(service, state) {
   const section = el("section", "service");
   section.append(el("h2", null, SERVICE_LABELS[service]));
@@ -137,6 +181,7 @@ function serviceSection(service, state) {
   const active = state.activeProfile && state.activeProfile[service];
   const names = Object.keys(svcProfiles).sort();
   const list = el("div", "profiles");
+  list.append(defaultRow(service, state));
   for (const name of names) {
     list.append(profileRow(service, name, svcProfiles[name], name === active));
   }

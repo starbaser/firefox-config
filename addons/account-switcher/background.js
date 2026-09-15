@@ -3,9 +3,17 @@
  * Cookie snapshot/switch per service + usage polling for claude.ai and
  * chatgpt.com. All state lives in browser.storage.local:
  *
- *   profiles      { <service>: { <name>: { savedAt, identity, plan, cookies[] } } }
- *   activeProfile { <service>: <name|null> }
- *   usage         { <service>: { identity, plan, meters[], updatedAt, error } }
+ *   profiles        { <service>: { <name>: { savedAt, identity, plan, cookies[] } } }
+ *   activeProfile   { <service>: <name|null> } — null means no override: the
+ *                   browser's own session is live (the default state)
+ *   defaultSessions { <service>: { savedAt, cookies[] } } — snapshot of the
+ *                   browser's own jar, taken before a profile first overrides
+ *                   it and kept fresh while no profile is selected; restored
+ *                   on unselect
+ *   usage           { <service>: { identity, plan, meters[], updatedAt, error } }
+ *
+ * Selecting a profile overrides the live jar with that profile's cookies;
+ * unselecting restores the default session snapshot.
  */
 
 const SERVICES = {
@@ -36,6 +44,7 @@ async function getStore(keys) {
   return {
     profiles: s.profiles || {},
     activeProfile: s.activeProfile || {},
+    defaultSessions: s.defaultSessions || {},
     usage: s.usage || {}
   };
 }
@@ -147,6 +156,18 @@ async function snapshotCookies(service) {
     for (const c of cookies) out.push(serializeCookie(c));
   }
   return out;
+}
+
+// Record the browser's own session for a service so an override can later be
+// undone. Skipped when the jar is empty — a logged-out browser must not
+// clobber the last known default session.
+async function snapshotDefaultSession(service) {
+  const cookies = await snapshotCookies(service);
+  if (cookies.length === 0) return;
+  const { defaultSessions } = await getStore(["defaultSessions"]);
+  await browser.storage.local.set({
+    defaultSessions: { ...defaultSessions, [service]: { savedAt: Date.now(), cookies } }
+  });
 }
 
 async function clearCookies(service) {
@@ -485,6 +506,14 @@ async function pollUsage(forceLive = false) {
     nextProfiles[service] = svcProfiles;
   }
   if (changed) await setProfiles(nextProfiles);
+
+  // While no profile overrides a service, the live jar IS the default
+  // session — keep its snapshot current (session tokens rotate) so
+  // unselecting a profile later restores a fresh default, not a stale one.
+  for (const service of Object.keys(SERVICES)) {
+    if (activeProfile[service]) continue;
+    await snapshotDefaultSession(service);
+  }
 }
 
 // ---------- profile operations ----------
@@ -495,7 +524,7 @@ async function saveProfile(service, name) {
 
   // Identity/plan of the session being saved, from the live usage fetch.
   await pollUsage(true);
-  const { profiles, activeProfile, usage } = await getStore(["profiles", "activeProfile", "usage"]);
+  const { profiles, usage } = await getStore(["profiles", "usage"]);
   const svcUsage = usage[service] || {};
   if (svcUsage.error) return { ok: false, error: svcUsage.error };
 
@@ -510,7 +539,8 @@ async function saveProfile(service, name) {
   };
   const next = { ...profiles, [service]: svcProfiles };
   await setProfiles(next);
-  await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: name } });
+  // Saving only records the session; it does not select the profile. The
+  // current override (or lack of one) is unchanged.
   return { ok: true };
 }
 
@@ -519,6 +549,9 @@ async function switchProfile(service, name) {
   const profile = profiles[service] && profiles[service][name];
   if (!profile) return { ok: false, error: "profile not found" };
 
+  // First override from the default state: preserve the browser's own
+  // session so unselecting can restore it.
+  if (!activeProfile[service]) await snapshotDefaultSession(service);
   await clearCookies(service);
   await restoreCookies(profile.cookies);
   await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: name } });
@@ -529,13 +562,32 @@ async function switchProfile(service, name) {
   return { ok: true };
 }
 
+async function unselectProfile(service) {
+  const { activeProfile, defaultSessions } = await getStore(["activeProfile", "defaultSessions"]);
+  if (!activeProfile[service]) return { ok: true };
+
+  const snapshot = defaultSessions[service];
+  if (snapshot && Array.isArray(snapshot.cookies) && snapshot.cookies.length > 0) {
+    await clearCookies(service);
+    await restoreCookies(snapshot.cookies);
+  }
+  // With no snapshot on record (e.g. state predating default tracking), the
+  // current jar simply becomes the default session from here on.
+  await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: null } });
+  reloadServiceTabs(service);
+  pollUsage(true);
+  return { ok: true };
+}
+
 async function deleteProfile(service, name) {
   const { profiles, activeProfile } = await getStore(["profiles", "activeProfile"]);
   const svcProfiles = { ...(profiles[service] || {}) };
   delete svcProfiles[name];
   await setProfiles({ ...profiles, [service]: svcProfiles });
   if (activeProfile[service] === name) {
-    await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: null } });
+    // Deleting the selected override returns the service to its default
+    // browser session.
+    await unselectProfile(service);
   }
   return { ok: true };
 }
@@ -549,11 +601,24 @@ browser.runtime.onMessage.addListener((msg) => {
 
   switch (msg.type) {
     case "get-state":
-      return run(getStore(["profiles", "activeProfile", "usage"]).then((s) => ({ ok: true, ...s })));
+      return run(
+        getStore(["profiles", "activeProfile", "usage", "defaultSessions"]).then((s) => ({
+          ok: true,
+          profiles: s.profiles,
+          activeProfile: s.activeProfile,
+          usage: s.usage,
+          // Metadata only — the popup never needs the cookies themselves.
+          defaultSessions: Object.fromEntries(
+            Object.entries(s.defaultSessions).map(([k, v]) => [k, { savedAt: v.savedAt }])
+          )
+        }))
+      );
     case "save-profile":
       return run(saveProfile(msg.service, msg.name));
     case "switch-profile":
       return run(switchProfile(msg.service, msg.name));
+    case "unselect-profile":
+      return run(unselectProfile(msg.service));
     case "delete-profile":
       return run(deleteProfile(msg.service, msg.name));
     case "refresh-usage":
