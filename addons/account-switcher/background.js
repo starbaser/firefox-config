@@ -1,19 +1,14 @@
 /* Account Switcher — background
  *
- * Cookie snapshot/switch per service + usage polling for claude.ai and
- * chatgpt.com. All state lives in browser.storage.local:
+ * Named cookie presets per service + usage polling for claude.ai and
+ * chatgpt.com. The addon holds no active/override state: the browser's
+ * cookie jar is always the live session, presets are explicit one-shot
+ * save/load checkpoints, and which preset (if any) the live session
+ * corresponds to is derived by matching the live identity reported by the
+ * service against each preset's stored identity.
  *
- *   profiles        { <service>: { <name>: { savedAt, identity, plan, cookies[] } } }
- *   activeProfile   { <service>: <name|null> } — null means no override: the
- *                   browser's own session is live (the default state)
- *   defaultSessions { <service>: { savedAt, cookies[] } } — snapshot of the
- *                   browser's own jar, taken before a profile first overrides
- *                   it and kept fresh while no profile is selected; restored
- *                   on unselect
- *   usage           { <service>: { identity, plan, meters[], updatedAt, error } }
- *
- * Selecting a profile overrides the live jar with that profile's cookies;
- * unselecting restores the default session snapshot.
+ *   profiles { <service>: { <name>: { savedAt, identity, plan, cookies[] } } }
+ *   usage    { <service>: { identity, plan, meters[], updatedAt, error } }
  */
 
 const SERVICES = {
@@ -43,8 +38,6 @@ async function getStore(keys) {
   const s = await browser.storage.local.get(keys);
   return {
     profiles: s.profiles || {},
-    activeProfile: s.activeProfile || {},
-    defaultSessions: s.defaultSessions || {},
     usage: s.usage || {}
   };
 }
@@ -54,15 +47,15 @@ async function setProfiles(profiles) {
   await browser.storage.local.set({ profiles });
 }
 
-// ---------- per-profile request auth ----------
+// ---------- per-preset request auth ----------
 //
 // The live usage endpoints answer for whatever session is in the browser's
-// cookie jar. To poll profiles that are NOT active, we attach that profile's
-// cookies as a manual Cookie header (never touching the jar): the fetch sets
-// credentials:"omit" plus an x-acct-switcher-profile marker header, and this
-// blocking webRequest listener swaps in the profile's cookies and strips the
-// marker. Extension pages are CORS-exempt for permitted hosts, so the custom
-// header triggers no preflight.
+// cookie jar. To poll presets that don't match the live session, we attach
+// that preset's cookies as a manual Cookie header (never touching the jar):
+// the fetch sets credentials:"omit" plus an x-acct-switcher-profile marker
+// header, and this blocking webRequest listener swaps in the preset's
+// cookies and strips the marker. Extension pages are CORS-exempt for
+// permitted hosts, so the custom header triggers no preflight.
 
 let profileCache = {};
 browser.storage.local.get("profiles").then((s) => {
@@ -115,7 +108,7 @@ browser.webRequest.onBeforeSendHeaders.addListener(
   ["blocking", "requestHeaders"]
 );
 
-// prof = { service, name } to authenticate as a stored profile; omitted = live jar.
+// prof = { service, name } to authenticate as a stored preset; omitted = live jar.
 function authedFetch(url, opts = {}, prof = null) {
   const o = { ...opts, headers: { ...(opts.headers || {}) } };
   if (prof) {
@@ -156,18 +149,6 @@ async function snapshotCookies(service) {
     for (const c of cookies) out.push(serializeCookie(c));
   }
   return out;
-}
-
-// Record the browser's own session for a service so an override can later be
-// undone. Skipped when the jar is empty — a logged-out browser must not
-// clobber the last known default session.
-async function snapshotDefaultSession(service) {
-  const cookies = await snapshotCookies(service);
-  if (cookies.length === 0) return;
-  const { defaultSessions } = await getStore(["defaultSessions"]);
-  await browser.storage.local.set({
-    defaultSessions: { ...defaultSessions, [service]: { savedAt: Date.now(), cookies } }
-  });
 }
 
 async function clearCookies(service) {
@@ -437,10 +418,10 @@ function pickFableMeter(state) {
 }
 
 // forceLive: bypass the staleness gate for the live-session fetch (used after
-// a switch/save, where the cached state belongs to the previous account, and
-// by the popup's refresh button). Inactive profiles are always staleness-gated.
+// a load/save, where the cached state belongs to the previous account, and by
+// the popup's refresh button). Preset polls are always staleness-gated.
 async function pollUsage(forceLive = false) {
-  const { usage, profiles, activeProfile } = await getStore(["usage", "profiles", "activeProfile"]);
+  const { usage, profiles } = await getStore(["usage", "profiles"]);
   const next = { ...usage };
   for (const service of Object.keys(SERVICES)) {
     const cached = usage[service];
@@ -453,18 +434,17 @@ async function pollUsage(forceLive = false) {
   }
   await browser.storage.local.set({ usage: next });
 
-  // Refresh every stored profile. The active one is stamped from the live
-  // state; inactive ones are polled with their own cookies (webRequest Cookie
-  // rewrite — the browser jar is never touched), skipping any fetched
-  // recently. Stale/dead sessions keep their last-known values and are
-  // retried next cycle.
+  // Refresh every stored preset. Any preset whose identity matches the live
+  // session is stamped from the live fetch; the rest are polled with their
+  // own cookies (webRequest Cookie rewrite — the browser jar is never
+  // touched), skipping any fetched recently. Stale/dead sessions keep their
+  // last-known values and are retried next cycle.
   let changed = false;
   const nextProfiles = { ...profiles };
   for (const service of Object.keys(SERVICES)) {
     const svcProfiles = { ...(nextProfiles[service] || {}) };
     const names = Object.keys(svcProfiles);
     if (names.length === 0) continue;
-    const active = activeProfile[service];
 
     const apply = (name, state) => {
       if (!state || state.error) return;
@@ -488,10 +468,17 @@ async function pollUsage(forceLive = false) {
       changed = true;
     };
 
-    if (active && svcProfiles[active]) apply(active, next[service]);
+    const liveIdentity = next[service] && !next[service].error ? next[service].identity : null;
+    const matchesLive = (name) =>
+      liveIdentity &&
+      svcProfiles[name].identity &&
+      svcProfiles[name].identity.toLowerCase() === liveIdentity.toLowerCase();
 
     for (const name of names) {
-      if (name === active) continue;
+      if (matchesLive(name)) {
+        apply(name, next[service]);
+        continue;
+      }
       if (isFresh(svcProfiles[name].fetchedAt)) continue;
       try {
         const state =
@@ -506,19 +493,11 @@ async function pollUsage(forceLive = false) {
     nextProfiles[service] = svcProfiles;
   }
   if (changed) await setProfiles(nextProfiles);
-
-  // While no profile overrides a service, the live jar IS the default
-  // session — keep its snapshot current (session tokens rotate) so
-  // unselecting a profile later restores a fresh default, not a stale one.
-  for (const service of Object.keys(SERVICES)) {
-    if (activeProfile[service]) continue;
-    await snapshotDefaultSession(service);
-  }
 }
 
-// ---------- profile operations ----------
+// ---------- preset operations ----------
 
-async function saveProfile(service, name) {
+async function savePreset(service, name) {
   const cookies = await snapshotCookies(service);
   if (cookies.length === 0) return { ok: false, error: "no cookies found — sign in first" };
 
@@ -539,22 +518,18 @@ async function saveProfile(service, name) {
   };
   const next = { ...profiles, [service]: svcProfiles };
   await setProfiles(next);
-  // Saving only records the session; it does not select the profile. The
-  // current override (or lack of one) is unchanged.
   return { ok: true };
 }
 
-async function switchProfile(service, name) {
-  const { profiles, activeProfile } = await getStore(["profiles", "activeProfile"]);
+// One-shot checkpoint restore: write the preset's cookies into the jar and
+// walk away. Nothing is recorded — the session evolves on its own from here.
+async function loadPreset(service, name) {
+  const { profiles } = await getStore(["profiles"]);
   const profile = profiles[service] && profiles[service][name];
-  if (!profile) return { ok: false, error: "profile not found" };
+  if (!profile) return { ok: false, error: "preset not found" };
 
-  // First override from the default state: preserve the browser's own
-  // session so unselecting can restore it.
-  if (!activeProfile[service]) await snapshotDefaultSession(service);
   await clearCookies(service);
   await restoreCookies(profile.cookies);
-  await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: name } });
   reloadServiceTabs(service);
   // The live session just changed accounts — cached usage belongs to the
   // previous one, so force the live fetch.
@@ -562,33 +537,11 @@ async function switchProfile(service, name) {
   return { ok: true };
 }
 
-async function unselectProfile(service) {
-  const { activeProfile, defaultSessions } = await getStore(["activeProfile", "defaultSessions"]);
-  if (!activeProfile[service]) return { ok: true };
-
-  const snapshot = defaultSessions[service];
-  if (snapshot && Array.isArray(snapshot.cookies) && snapshot.cookies.length > 0) {
-    await clearCookies(service);
-    await restoreCookies(snapshot.cookies);
-  }
-  // With no snapshot on record (e.g. state predating default tracking), the
-  // current jar simply becomes the default session from here on.
-  await browser.storage.local.set({ activeProfile: { ...activeProfile, [service]: null } });
-  reloadServiceTabs(service);
-  pollUsage(true);
-  return { ok: true };
-}
-
-async function deleteProfile(service, name) {
-  const { profiles, activeProfile } = await getStore(["profiles", "activeProfile"]);
+async function deletePreset(service, name) {
+  const { profiles } = await getStore(["profiles"]);
   const svcProfiles = { ...(profiles[service] || {}) };
   delete svcProfiles[name];
   await setProfiles({ ...profiles, [service]: svcProfiles });
-  if (activeProfile[service] === name) {
-    // Deleting the selected override returns the service to its default
-    // browser session.
-    await unselectProfile(service);
-  }
   return { ok: true };
 }
 
@@ -602,35 +555,23 @@ browser.runtime.onMessage.addListener((msg) => {
   switch (msg.type) {
     case "get-state":
       return run(
-        getStore(["profiles", "activeProfile", "usage", "defaultSessions"]).then((s) => ({
-          ok: true,
-          profiles: s.profiles,
-          activeProfile: s.activeProfile,
-          usage: s.usage,
-          // Metadata only — the popup never needs the cookies themselves.
-          defaultSessions: Object.fromEntries(
-            Object.entries(s.defaultSessions).map(([k, v]) => [k, { savedAt: v.savedAt }])
-          )
-        }))
+        getStore(["profiles", "usage"]).then((s) => ({ ok: true, profiles: s.profiles, usage: s.usage }))
       );
-    case "save-profile":
-      return run(saveProfile(msg.service, msg.name));
-    case "switch-profile":
-      return run(switchProfile(msg.service, msg.name));
-    case "unselect-profile":
-      return run(unselectProfile(msg.service));
-    case "delete-profile":
-      return run(deleteProfile(msg.service, msg.name));
+    case "save-preset":
+      return run(savePreset(msg.service, msg.name));
+    case "load-preset":
+      return run(loadPreset(msg.service, msg.name));
+    case "delete-preset":
+      return run(deletePreset(msg.service, msg.name));
     case "refresh-usage":
       return run(pollUsage(true).then(() => ({ ok: true })));
     case "export-profiles":
       return run(
-        getStore(["profiles", "activeProfile"]).then((s) => ({
+        getStore(["profiles"]).then((s) => ({
           ok: true,
           version: 1,
           exportedAt: Date.now(),
-          profiles: s.profiles,
-          activeProfile: s.activeProfile
+          profiles: s.profiles
         }))
       );
     default:
@@ -645,6 +586,8 @@ browser.alarms.onAlarm.addListener((alarm) => {
 });
 browser.runtime.onInstalled.addListener(() => {
   browser.alarms.create(POLL_ALARM, { periodInMinutes: POLL_PERIOD_MINUTES });
+  // Retired state from the active-profile / default-snapshot designs.
+  browser.storage.local.remove(["activeProfile", "defaultSessions"]);
   pollUsage();
 });
 browser.runtime.onStartup.addListener(() => {

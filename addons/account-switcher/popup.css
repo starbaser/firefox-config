@@ -124,12 +124,9 @@ button:disabled { opacity: 0.45; cursor: default; }
   border-radius: 3px;
   margin-bottom: 4px;
 }
-.profile.active { border-color: var(--ok); }
-.profile.default { border-style: dashed; }
-.profile.default .profile-name { color: var(--dim); font-style: italic; }
-.profile.default.active .profile-name { color: var(--fg); font-style: normal; }
+.profile.current { border-color: var(--ok); }
 .profile-name { color: var(--fg); }
-.profile.active .profile-name::after { content: " ●"; color: var(--ok); }
+.profile.current .profile-name::after { content: " ●"; color: var(--ok); }
 .profile-sub { color: var(--dim); font-size: 11px; }
 .profile-weekly-bar {
   height: 3px;

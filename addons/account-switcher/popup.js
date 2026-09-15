@@ -82,95 +82,57 @@ function thinMeterBar(data, label, title, extraClass) {
   return wrap;
 }
 
-function profileRow(service, name, profile, isActive) {
-  const row = el("div", "profile" + (isActive ? " active" : ""));
+// isCurrent: this preset's identity matches the live session's identity.
+function presetRow(service, name, preset, isCurrent) {
+  const row = el("div", "profile" + (isCurrent ? " current" : ""));
   const info = el("div", "profile-info");
   const title = el("div", "profile-name", name);
   info.append(title);
-  const sub = [profile.identity, profile.plan].filter(Boolean).join(" · ");
+  const sub = [preset.identity, preset.plan].filter(Boolean).join(" · ");
   if (sub) info.append(el("div", "profile-sub", sub));
   info.append(
     el(
       "div",
       "profile-sub",
-      profile.nextBilling
-        ? `next billing ${new Date(profile.nextBilling).toLocaleDateString()}`
-        : `saved ${new Date(profile.savedAt).toLocaleDateString()}`
+      preset.nextBilling
+        ? `next billing ${new Date(preset.nextBilling).toLocaleDateString()}`
+        : `saved ${new Date(preset.savedAt).toLocaleDateString()}`
     )
   );
-  if (service === "chatgpt" && profile.codexResets != null) {
-    info.append(el("div", "profile-sub", `codex resets: ${profile.codexResets}`));
+  if (service === "chatgpt" && preset.codexResets != null) {
+    info.append(el("div", "profile-sub", `codex resets: ${preset.codexResets}`));
   }
-  if (profile.weekly && profile.weekly.percent != null) {
-    info.append(thinMeterBar(profile.weekly, "7-day", `7-day usage: ${profile.weekly.percent}%`));
+  if (preset.weekly && preset.weekly.percent != null) {
+    info.append(thinMeterBar(preset.weekly, "7-day", `7-day usage: ${preset.weekly.percent}%`));
   }
-  if (profile.fable && profile.fable.percent != null) {
-    info.append(thinMeterBar(profile.fable, "fable", `Fable 7-day: ${profile.fable.percent}%`, "fable"));
+  if (preset.fable && preset.fable.percent != null) {
+    info.append(thinMeterBar(preset.fable, "fable", `Fable 7-day: ${preset.fable.percent}%`, "fable"));
   }
   row.append(info);
 
   const actions = el("div", "profile-actions");
-  const switchBtn = el("button", "switch", "Switch");
-  switchBtn.disabled = isActive;
-  switchBtn.addEventListener("click", async () => {
-    switchBtn.disabled = true;
-    await browser.runtime.sendMessage({ type: "switch-profile", service, name });
+  const loadBtn = el("button", "switch", "Load");
+  loadBtn.title = "Write this preset's cookies into the browser session";
+  loadBtn.addEventListener("click", async () => {
+    loadBtn.disabled = true;
+    await browser.runtime.sendMessage({ type: "load-preset", service, name });
     await render();
   });
   const delBtn = el("button", "delete", "✕");
-  delBtn.title = "Delete profile";
+  delBtn.title = "Delete preset";
   delBtn.addEventListener("click", async () => {
     delBtn.disabled = true;
-    await browser.runtime.sendMessage({ type: "delete-profile", service, name });
+    await browser.runtime.sendMessage({ type: "delete-preset", service, name });
     await render();
   });
-  actions.append(switchBtn, delBtn);
+  actions.append(loadBtn, delBtn);
   row.append(actions);
   return row;
 }
 
-// Synthetic entry for the browser's own session — the state that is live
-// whenever no profile overrides the service.
-function defaultRow(service, state) {
-  const active = state.activeProfile && state.activeProfile[service];
-  const isDefault = !active;
-  const row = el("div", "profile default" + (isDefault ? " active" : ""));
-  const info = el("div", "profile-info");
-  info.append(el("div", "profile-name", "Browser session"));
-  if (isDefault) {
-    const usage = (state.usage && state.usage[service]) || null;
-    const sub =
-      usage && !usage.error
-        ? [usage.identity, usage.plan].filter(Boolean).join(" · ")
-        : null;
-    info.append(el("div", "profile-sub", sub || "live cookies"));
-  } else {
-    const snapshot = state.defaultSessions && state.defaultSessions[service];
-    info.append(
-      el(
-        "div",
-        "profile-sub",
-        snapshot
-          ? `held since ${new Date(snapshot.savedAt).toLocaleDateString()}`
-          : "no saved session"
-      )
-    );
-  }
-  row.append(info);
-
-  const actions = el("div", "profile-actions");
-  if (!isDefault) {
-    const restoreBtn = el("button", "switch", "Restore");
-    restoreBtn.title = `Unselect ${active} and return to the browser's own session`;
-    restoreBtn.addEventListener("click", async () => {
-      restoreBtn.disabled = true;
-      await browser.runtime.sendMessage({ type: "unselect-profile", service });
-      await render();
-    });
-    actions.append(restoreBtn);
-  }
-  row.append(actions);
-  return row;
+function liveIdentity(state, service) {
+  const usage = (state.usage && state.usage[service]) || null;
+  return usage && !usage.error && usage.identity ? usage.identity.toLowerCase() : null;
 }
 
 function serviceSection(service, state) {
@@ -178,27 +140,27 @@ function serviceSection(service, state) {
   section.append(el("h2", null, SERVICE_LABELS[service]));
 
   const svcProfiles = (state.profiles && state.profiles[service]) || {};
-  const active = state.activeProfile && state.activeProfile[service];
+  const live = liveIdentity(state, service);
   const names = Object.keys(svcProfiles).sort();
   const list = el("div", "profiles");
-  list.append(defaultRow(service, state));
   for (const name of names) {
-    list.append(profileRow(service, name, svcProfiles[name], name === active));
+    const p = svcProfiles[name];
+    list.append(presetRow(service, name, p, !!(live && p.identity && p.identity.toLowerCase() === live)));
   }
-  if (names.length === 0) list.append(el("div", "dim", "no saved profiles"));
+  if (names.length === 0) list.append(el("div", "dim", "no saved presets"));
   section.append(list);
 
   const form = el("div", "save-form");
   const input = el("input");
   input.type = "text";
-  input.placeholder = "profile name…";
+  input.placeholder = "preset name…";
   input.maxLength = 40;
   const saveBtn = el("button", "save", "Save current session");
   const doSave = async () => {
     const name = input.value.trim();
     if (!name) return;
     saveBtn.disabled = true;
-    const res = await browser.runtime.sendMessage({ type: "save-profile", service, name });
+    const res = await browser.runtime.sendMessage({ type: "save-preset", service, name });
     if (!res || !res.ok) {
       saveBtn.textContent = (res && res.error) || "save failed";
       setTimeout(() => {
@@ -220,7 +182,8 @@ function serviceSection(service, state) {
   return section;
 }
 
-// Bottom bar: the live session's full status for each service.
+// Bottom bar: the live session's full status for each service, plus which
+// preset (if any) it matches.
 function statusSection(service, state) {
   const panel = el("section", "status-panel");
   panel.append(el("h2", null, SERVICE_LABELS[service]));
@@ -230,6 +193,22 @@ function statusSection(service, state) {
   if (usage && !usage.error) {
     const who = [usage.identity, usage.plan].filter(Boolean).join(" · ");
     status.append(el("div", "identity", who || "signed in"));
+
+    const svcProfiles = (state.profiles && state.profiles[service]) || {};
+    const matches = Object.keys(svcProfiles)
+      .filter((n) => {
+        const id = svcProfiles[n].identity;
+        return id && usage.identity && id.toLowerCase() === usage.identity.toLowerCase();
+      })
+      .sort();
+    status.append(
+      el(
+        "div",
+        "profile-sub",
+        matches.length > 0 ? `preset: ${matches.join(", ")}` : "no matching preset"
+      )
+    );
+
     const meterList = el("div", "meters");
     for (const m of usage.meters || []) meterList.append(meterEl(m));
     if ((usage.meters || []).length === 0) meterList.append(el("div", "dim", "no usage data"));
