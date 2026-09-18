@@ -4,7 +4,6 @@ const SERVICE_LABELS = { claude: "Claude", chatgpt: "ChatGPT" };
 const SERVICE_ORDER = ["chatgpt", "claude"];
 
 const servicesEl = document.getElementById("services");
-const statusesEl = document.getElementById("statuses");
 document.getElementById("export").addEventListener("click", async (ev) => {
   ev.target.disabled = true;
   const res = await browser.runtime.sendMessage({ type: "export-profiles" });
@@ -44,28 +43,6 @@ function el(tag, cls, text) {
   if (cls) e.className = cls;
   if (text != null) e.textContent = text;
   return e;
-}
-
-function meterEl(meter) {
-  const row = el("div", "meter");
-  const head = el("div", "meter-head");
-  head.append(el("span", "meter-label", meter.label));
-  const pct = meter.percent != null ? `${meter.percent}%` : "—";
-  head.append(el("span", "meter-pct", pct));
-  row.append(head);
-
-  const bar = el("div", "meter-bar");
-  const fill = el("div", "meter-fill");
-  fill.style.width = `${Math.min(100, meter.percent || 0)}%`;
-  fill.classList.add(
-    meter.percent >= 90 ? "crit" : meter.percent >= 70 ? "warn" : "ok"
-  );
-  bar.append(fill);
-  row.append(bar);
-
-  const reset = fmtReset(meter.resetsAt);
-  if (reset) row.append(el("div", "meter-reset", reset));
-  return row;
 }
 
 function thinMeterBar(data, label, title, extraClass) {
@@ -182,51 +159,11 @@ function serviceSection(service, state) {
   return section;
 }
 
-// Bottom bar: the live session's full status for each service, plus which
-// preset (if any) it matches.
-function statusSection(service, state) {
-  const panel = el("section", "status-panel");
-  panel.append(el("h2", null, SERVICE_LABELS[service]));
-
-  const usage = (state.usage && state.usage[service]) || null;
-  const status = el("div", "status");
-  if (usage && !usage.error) {
-    const who = [usage.identity, usage.plan].filter(Boolean).join(" · ");
-    status.append(el("div", "identity", who || "signed in"));
-
-    const svcProfiles = (state.profiles && state.profiles[service]) || {};
-    const matches = Object.keys(svcProfiles)
-      .filter((n) => {
-        const id = svcProfiles[n].identity;
-        return id && usage.identity && id.toLowerCase() === usage.identity.toLowerCase();
-      })
-      .sort();
-    status.append(
-      el(
-        "div",
-        "profile-sub",
-        matches.length > 0 ? `preset: ${matches.join(", ")}` : "no matching preset"
-      )
-    );
-
-    const meterList = el("div", "meters");
-    for (const m of usage.meters || []) meterList.append(meterEl(m));
-    if ((usage.meters || []).length === 0) meterList.append(el("div", "dim", "no usage data"));
-    status.append(meterList);
-  } else {
-    status.append(el("div", "error", (usage && usage.error) || "no data yet"));
-  }
-  panel.append(status);
-  return panel;
-}
-
 async function render() {
   const state = await browser.runtime.sendMessage({ type: "get-state" });
   servicesEl.textContent = "";
-  statusesEl.textContent = "";
   for (const service of SERVICE_ORDER) {
     servicesEl.append(serviceSection(service, state || {}));
-    statusesEl.append(statusSection(service, state || {}));
   }
 }
 
