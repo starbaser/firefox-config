@@ -7,7 +7,9 @@
  * corresponds to is derived by matching the live identity reported by the
  * service against each preset's stored identity.
  *
- *   profiles { <service>: { <name>: { savedAt, identity, plan, cookies[] } } }
+ *   profiles { <service>: { <name>: { savedAt, identity, plan, nextBilling,
+ *     codexResets, cookies[], fetchedAt,
+ *     session?, weekly?, fable? — { percent, resetsAt, label, updatedAt } } } }
  *   usage    { <service>: { identity, plan, meters[], updatedAt, error } }
  */
 
@@ -417,6 +419,18 @@ function pickFableMeter(state) {
   return meters.find((m) => /fable/i.test(m.label)) || null;
 }
 
+// The short session window: Claude's five_hour meter, or any ChatGPT window
+// shorter than a day (pro plans expose a 5-hour primary_window; the free
+// plan's 30-day primary window is NOT a session window).
+function pickSessionMeter(state) {
+  const meters = (state && state.meters) || [];
+  return (
+    meters.find((m) => m.id === "five_hour") ||
+    meters.find((m) => (m.windowSeconds || 0) > 0 && m.windowSeconds < 86400) ||
+    null
+  );
+}
+
 // forceLive: bypass the staleness gate for the live-session fetch (used after
 // a load/save, where the cached state belongs to the previous account, and by
 // the popup's refresh button). Preset polls are always staleness-gated.
@@ -448,8 +462,15 @@ async function pollUsage(forceLive = false) {
 
     const apply = (name, state) => {
       if (!state || state.error) return;
+      const session = pickSessionMeter(state);
       const weekly = pickWeeklyMeter(state);
       const fable = pickFableMeter(state);
+      const stamp = (m) => ({
+        percent: m.percent,
+        resetsAt: m.resetsAt ?? null,
+        label: m.label,
+        updatedAt: state.updatedAt || Date.now()
+      });
       const p = svcProfiles[name];
       svcProfiles[name] = {
         ...p,
@@ -458,12 +479,9 @@ async function pollUsage(forceLive = false) {
         plan: state.plan || p.plan,
         nextBilling: state.nextBilling || p.nextBilling || null,
         codexResets: state.codexResets ?? p.codexResets ?? null,
-        weekly: weekly
-          ? { percent: weekly.percent, resetsAt: weekly.resetsAt ?? null, updatedAt: state.updatedAt || Date.now() }
-          : p.weekly,
-        fable: fable
-          ? { percent: fable.percent, resetsAt: fable.resetsAt ?? null, updatedAt: state.updatedAt || Date.now() }
-          : p.fable
+        session: session ? stamp(session) : p.session,
+        weekly: weekly ? stamp(weekly) : p.weekly,
+        fable: fable ? stamp(fable) : p.fable
       };
       changed = true;
     };

@@ -38,6 +38,13 @@ function fmtReset(resetsAt) {
   return `resets in ${m}m`;
 }
 
+function fmtBilling(nextBilling) {
+  const days = Math.ceil((nextBilling - Date.now()) / 86400000);
+  if (days <= 0) return "billing today";
+  if (days === 1) return "billing tomorrow";
+  return `billing in ${days}d`;
+}
+
 function el(tag, cls, text) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -67,20 +74,25 @@ function presetRow(service, name, preset, isCurrent) {
   info.append(title);
   const sub = [preset.identity, preset.plan].filter(Boolean).join(" · ");
   if (sub) info.append(el("div", "profile-sub", sub));
-  info.append(
-    el(
-      "div",
-      "profile-sub",
-      preset.nextBilling
-        ? `next billing ${new Date(preset.nextBilling).toLocaleDateString()}`
-        : `saved ${new Date(preset.savedAt).toLocaleDateString()}`
-    )
+  const billEl = el(
+    "div",
+    "profile-sub",
+    preset.nextBilling
+      ? fmtBilling(preset.nextBilling)
+      : `saved ${new Date(preset.savedAt).toLocaleDateString()}`
   );
+  if (preset.nextBilling) billEl.title = new Date(preset.nextBilling).toLocaleString();
+  info.append(billEl);
   if (service === "chatgpt" && preset.codexResets != null) {
     info.append(el("div", "profile-sub", `codex resets: ${preset.codexResets}`));
   }
+  if (preset.session && preset.session.percent != null) {
+    const lbl = preset.session.label || "5-hour";
+    info.append(thinMeterBar(preset.session, lbl, `${lbl} usage: ${preset.session.percent}%`));
+  }
   if (preset.weekly && preset.weekly.percent != null) {
-    info.append(thinMeterBar(preset.weekly, "7-day", `7-day usage: ${preset.weekly.percent}%`));
+    const lbl = preset.weekly.label || "7-day";
+    info.append(thinMeterBar(preset.weekly, lbl, `${lbl} usage: ${preset.weekly.percent}%`));
   }
   if (preset.fable && preset.fable.percent != null) {
     info.append(thinMeterBar(preset.fable, "fable", `Fable 7-day: ${preset.fable.percent}%`, "fable"));
